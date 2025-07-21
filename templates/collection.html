@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{% if show_favorites %}Favoritos{% else %}Mi Colección{% endif %} - Entrelíneas{% endblock %}
+
+{% block content %}
+<div class="collection-section">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    {% if show_favorites %}
+                        <i class="fas fa-heart text-danger me-2"></i>Mis Favoritos
+                    {% else %}
+                        <i class="fas fa-book me-2"></i>Mi Colección
+                    {% endif %}
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('collection') }}" class="btn btn-outline-primary {{ 'active' if not show_favorites else '' }}">
+                        <i class="fas fa-book me-1"></i>Todas
+                    </a>
+                    <a href="{{ url_for('favorites') }}" class="btn btn-outline-danger {{ 'active' if show_favorites else '' }}">
+                        <i class="fas fa-heart me-1"></i>Favoritos
+                    </a>
+                </div>
+            </div>
+
+            {% if phrases %}
+                <div class="row">
+                    {% for phrase in phrases %}
+                    <div class="col-lg-6 col-xl-4 mb-4">
+                        <div class="phrase-collection-card">
+                            <div class="phrase-content">
+                                <div class="phrase-text">
+                                    "{{ phrase.generated_phrase }}"
+                                </div>
+                                <div class="phrase-meta">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ phrase.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                    <span class="badge bg-secondary ms-2">
+                                        {% if phrase.style == 'poetica_minimalista' %}
+                                            <i class="fas fa-leaf me-1"></i>Minimalista
+                                        {% elif phrase.style == 'indirecta_redes' %}
+                                            <i class="fas fa-share-alt me-1"></i>Redes
+                                        {% elif phrase.style == 'diario_intimo' %}
+                                            <i class="fas fa-book-open me-1"></i>Íntimo
+                                        {% elif phrase.style == 'reflexiva' %}
+                                            <i class="fas fa-brain me-1"></i>Reflexiva
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="phrase-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ phrase.generated_phrase }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="sharePhrase('{{ phrase.generated_phrase }}')">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-{{ 'danger' if phrase.is_favorite else 'secondary' }}" 
+                                        onclick="toggleFavorite({{ phrase.id }})" 
+                                        id="favoriteBtn{{ phrase.id }}">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase({{ phrase.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="text-center py-5">
+                        <i class="fas fa-{{ 'heart' if show_favorites else 'book' }} fa-3x text-muted mb-3"></i>
+                        <h3>
+                            {% if show_favorites %}
+                                No tienes frases favoritas aún
+                            {% else %}
+                                Tu colección está vacía
+                            {% endif %}
+                        </h3>
+                        <p class="text-muted">
+                            {% if show_favorites %}
+                                Marca tus frases favoritas para verlas aquí
+                            {% else %}
+                                Crea tu primera frase poética para comenzar tu colección
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-magic me-2"></i>Crear mi primera frase
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres eliminar esta frase? Esta acción no se puede deshacer.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="deleteForm" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

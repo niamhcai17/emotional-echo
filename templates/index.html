@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Entrelíneas - Transforma tus emociones en poesía{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <h1 class="hero-title">Entrelíneas</h1>
+                <p class="hero-subtitle">Transforma tus emociones en elegantes frases poéticas</p>
+            </div>
+
+            <!-- Main Form -->
+            <div class="emotion-form-card">
+                <form method="POST" action="{{ url_for('generate_phrase') }}" id="emotionForm">
+                    <div class="mb-4">
+                        <label for="emotion" class="form-label">¿Cómo te sientes?</label>
+                        <textarea 
+                            class="form-control emotion-input" 
+                            id="emotion" 
+                            name="emotion" 
+                            rows="4" 
+                            placeholder="Describe lo que sientes en este momento..."
+                            maxlength="500"
+                            required>{{ original_emotion or '' }}</textarea>
+                        <div class="form-text">
+                            <span id="charCount">0</span>/500 caracteres
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="style" class="form-label">Elige tu estilo</label>
+                        <select class="form-select style-select" id="style" name="style" required>
+                            <option value="poetica_minimalista" {{ 'selected' if style == 'poetica_minimalista' else '' }}>
+                                <i class="fas fa-leaf"></i> Poética minimalista
+                            </option>
+                            <option value="indirecta_redes" {{ 'selected' if style == 'indirecta_redes' else '' }}>
+                                <i class="fas fa-share-alt"></i> Indirecta para redes
+                            </option>
+                            <option value="diario_intimo" {{ 'selected' if style == 'diario_intimo' else '' }}>
+                                <i class="fas fa-book-open"></i> Diario íntimo
+                            </option>
+                            <option value="reflexiva" {{ 'selected' if style == 'reflexiva' else '' }}>
+                                <i class="fas fa-brain"></i> Reflexiva
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-generate" id="generateBtn">
+                            <i class="fas fa-magic me-2"></i>Crear mi frase
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Generated Phrase Display -->
+            {% if phrase %}
+            <div class="phrase-result mt-5">
+                <div class="phrase-card">
+                    <div class="phrase-text">
+                        "{{ phrase }}"
+                    </div>
+                    <div class="phrase-actions mt-4">
+                        <button class="btn btn-outline-primary" onclick="copyToClipboard('{{ phrase }}')">
+                            <i class="fas fa-copy me-2"></i>Copiar
+                        </button>
+                        <button class="btn btn-outline-success" onclick="sharePhrase('{{ phrase }}')">
+                            <i class="fas fa-share me-2"></i>Compartir
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="toggleFavorite({{ phrase_id }})" id="favoriteBtn">
+                            <i class="fas fa-heart me-2"></i>Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Style descriptions -->
+            <div class="style-descriptions mt-5">
+                <h3 class="text-center mb-4">Estilos disponibles</h3>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="style-card">
+                            <h5><i class="fas fa-leaf text-success me-2"></i>Poética minimalista</h5>
+                            <p>Frases breves y elegantes que capturan la esencia de tus emociones con simplicidad.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="style-card">
+                            <h5><i class="fas fa-share-alt text-primary me-2"></i>Indirecta para redes</h5>
+                            <p>Perfectas para compartir en redes sociales de manera sutil y sofisticada.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="style-card">
+                            <h5><i class="fas fa-book-open text-warning me-2"></i>Diario íntimo</h5>
+                            <p>Frases personales e íntimas, ideales para reflexionar sobre tus sentimientos.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="style-card">
+                            <h5><i class="fas fa-brain text-info me-2"></i>Reflexiva</h5>
+                            <p>Frases profundas que invitan a la contemplación y el autoconocimiento.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p>Creando tu frase poética...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
