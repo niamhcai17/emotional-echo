@@ -5,7 +5,7 @@ from openai_service import generate_poetic_phrase
 
 @app.route('/')
 def index():
-    """Main page with emotion input and style selection"""
+    """Main page with emotion input and style selection."""
     return render_template('index.html')
 
 @app.route('/generate', methods=['POST'])
