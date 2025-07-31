@@ -2,7 +2,7 @@
 
 ## Overview
 
-Entrelíneas is a Flask-based web application that transforms user emotions into elegant poetic phrases using OpenAI's GPT-4o model. The application allows users to input their emotional state and select from different poetic styles to generate personalized, poetic expressions in Spanish. Users can save their favorite phrases and maintain a collection of all generated content.
+Entrelíneas is a Flask-based web application that transforms user emotions into elegant poetic phrases using OpenAI's GPT-4o model. The application allows users to input their emotional state and select from different poetic styles to generate personalized, poetic expressions in Spanish. Users can save their favorite phrases and maintain a collection of all generated content. By J.
 
 ## User Preferences
 
