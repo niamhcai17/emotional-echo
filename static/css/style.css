@@ -1,14 +1,14 @@
 /* Root variables for consistent theming */
 :root {
-    --primary-color: #6c63ff;
-    --secondary-color: #f8f9fa;
-    --accent-color: #ff6b6b;
-    --text-primary: #2c3e50;
+    --primary-color: #a18cd1;
+    --secondary-color: #fefefe;
+    --accent-color: #fbc2eb;
+    --text-primary: #34495e;
     --text-secondary: #7f8c8d;
-    --text-muted: #95a5a6;
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-muted: #dfe6e9;
+    --bg-gradient: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    --border-radius: 12px;
+    --border-radius: 18px;
     --transition: all 0.3s ease;
 }
 
