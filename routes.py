@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
-from app import app, db
+from app import app
+from database import db
 from models import Phrase
 from openai_service import generate_poetic_phrase
 
@@ -24,18 +25,21 @@ def generate_phrase():
     
     try:
         # Generate phrase using OpenAI
-        generated_phrase = generate_poetic_phrase(emotion, style)
+        result = generate_poetic_phrase(emotion, style)
         
         # Check if phrase generation failed
-        if generated_phrase is None:
+        if result[0] is None:
             flash('No se pudo generar tu frase en este momento. Por favor, verifica tu clave de API de OpenAI o inténtalo más tarde. Es posible que hayas excedido tu cuota.', 'error')
             return redirect(url_for('index'))
+        
+        generated_phrase, language = result
         
         # Save to database
         phrase = Phrase(
             original_emotion=emotion,
             style=style,
-            generated_phrase=generated_phrase
+            generated_phrase=generated_phrase,
+            language=language
         )
         db.session.add(phrase)
         db.session.commit()
