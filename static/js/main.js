@@ -6,122 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const emotionForm = document.getElementById('emotionForm');
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    const welcomeModal = new bootstrap.Modal(document.getElementById('welcomeModal'));
     let deleteForm = null;
-
-    // Check if user has a name stored
-    const userName = localStorage.getItem('userName');
-    const emotionLabel = document.getElementById('emotionLabel');
-    const navUserName = document.getElementById('navUserName');
-    
-    // Show welcome modal if no name is stored
-    if (!userName && welcomeModal) {
-        welcomeModal.show();
-    } else if (userName && emotionLabel) {
-        // Update the label with personalized greeting
-        emotionLabel.textContent = `Hola, ${userName} ¿Cómo te sientes?`;
-        // Update navigation
-        if (navUserName) {
-            navUserName.textContent = userName;
-        }
-    }
-
-    // Handle welcome form submission
-    const welcomeForm = document.getElementById('welcomeForm');
-    if (welcomeForm) {
-        welcomeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const nameInput = document.getElementById('userName');
-            const userName = nameInput.value.trim();
-            
-            if (userName) {
-                // Store the name in localStorage
-                localStorage.setItem('userName', userName);
-                
-                // Send to backend
-                fetch('/api/user/name', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ user_name: userName })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update the emotion label
-                        if (emotionLabel) {
-                            emotionLabel.textContent = `Hola, ${userName} ¿Cómo te sientes?`;
-                        }
-                        
-                        // Update navigation
-                        if (navUserName) {
-                            navUserName.textContent = userName;
-                        }
-                        
-                        // Hide the modal
-                        welcomeModal.hide();
-                        
-                        // Show welcome message
-                        showToast(`¡Bienvenido, ${userName}!`, 'success');
-                        
-                        // Focus on the emotion input
-                        if (emotionInput) {
-                            emotionInput.focus();
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error saving name:', error);
-                    // Still update locally even if backend fails
-                    if (emotionLabel) {
-                        emotionLabel.textContent = `Hola, ${userName} ¿Cómo te sientes?`;
-                    }
-                    welcomeModal.hide();
-                    showToast(`¡Bienvenido, ${userName}!`, 'success');
-                });
-            }
-        });
-    }
-
-    // Add name change functionality
-    window.changeUserName = function() {
-        const newName = prompt('¿Cuál es tu nombre?', localStorage.getItem('userName') || '');
-        if (newName && newName.trim()) {
-            const userName = newName.trim();
-            localStorage.setItem('userName', userName);
-            
-            // Update the emotion label
-            if (emotionLabel) {
-                emotionLabel.textContent = `Hola, ${userName} ¿Cómo te sientes?`;
-            }
-            
-            // Update navigation
-            if (navUserName) {
-                navUserName.textContent = userName;
-            }
-            
-            // Send to backend
-            fetch('/api/user/name', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ user_name: userName })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(`¡Hola, ${userName}!`, 'success');
-                }
-            })
-            .catch(error => {
-                console.error('Error updating name:', error);
-                showToast(`¡Hola, ${userName}!`, 'success');
-            });
-        }
-    };
 
     // Character counter
     if (emotionInput && charCount) {
@@ -151,29 +36,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Agregar el nombre del usuario al formulario
-            const userName = localStorage.getItem('userName');
-            if (userName) {
-                // Crear un campo oculto para el nombre del usuario
-                let userInput = document.getElementById('user_name');
-                if (!userInput) {
-                    userInput = document.createElement('input');
-                    userInput.type = 'hidden';
-                    userInput.name = 'user_name';
-                    userInput.id = 'user_name';
-                    emotionForm.appendChild(userInput);
-                }
-                userInput.value = userName;
-            }
-            
             // Show loading state
             generateBtn.disabled = true;
-            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Creando...';
             generateBtn.classList.add('loading');
             
             // Show loading modal
             loadingModal.show();
+            
+            // Add a small delay to ensure the modal shows before form submission
+            setTimeout(() => {
+                // The form will submit normally
+            }, 100);
         });
+    }
+
+    // Hide loading modal if page is reloaded with a phrase (successful generation)
+    if (document.querySelector('.phrase-result')) {
+        // If there's a phrase result, hide the loading modal
+        if (loadingModal) {
+            loadingModal.hide();
+        }
+        
+        // Reset button state
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Crear mi frase';
+            generateBtn.classList.remove('loading');
+        }
     }
 
     // Auto-hide alerts after 5 seconds

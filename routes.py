@@ -12,18 +12,52 @@ else:
 @app.route('/')
 def index():
     """Main page with emotion input and style selection."""
-    return render_template('index.html')
+    # Verificar si el usuario tiene un nombre guardado
+    user_name = request.cookies.get('user_name', '')
+    
+    if not user_name:
+        # Si no tiene nombre, redirigir al landing
+        return redirect(url_for('landing'))
+    
+    return render_template('index.html', user_name=user_name)
+
+@app.route('/landing', methods=['GET', 'POST'])
+def landing():
+    """Landing page for user registration"""
+    if request.method == 'POST':
+        user_name = request.form.get('user_name', '').strip()
+        
+        if not user_name:
+            flash('Por favor, ingresa tu nombre.', 'error')
+            return render_template('landing.html')
+        
+        if len(user_name) > 30:
+            flash('El nombre es demasiado largo. Máximo 30 caracteres.', 'error')
+            return render_template('landing.html')
+        
+        # Crear respuesta con cookie
+        response = redirect(url_for('index'))
+        response.set_cookie('user_name', user_name, max_age=365*24*60*60)  # 1 año
+        
+        flash(f'¡Bienvenido, {user_name}! Ya puedes comenzar a crear frases poéticas.', 'success')
+        return response
+    
+    return render_template('landing.html')
 
 @app.route('/generate', methods=['POST'])
 def generate_phrase():
     """Generate a poetic phrase from user emotion and style"""
     emotion = request.form.get('emotion', '').strip()
     style = request.form.get('style', 'poetica_minimalista')
-    user_name = request.form.get('user_name', '').strip()
+    user_name = request.cookies.get('user_name', '').strip()  # Obtener de cookies
     
     if not emotion:
         flash('Por favor, describe cómo te sientes.', 'error')
         return redirect(url_for('index'))
+    
+    if not user_name:
+        flash('No se encontró tu nombre. Por favor, vuelve a ingresar tu nombre.', 'error')
+        return redirect(url_for('landing'))
     
     if len(emotion) > 500:
         flash('La descripción es demasiado larga. Máximo 500 caracteres.', 'error')
@@ -252,26 +286,6 @@ def get_phrase_api(phrase_id):
         return jsonify(phrase)
     except Exception as e:
         return jsonify({'error': str(e)}), 404
-
-@app.route('/api/user/name', methods=['GET', 'POST'])
-def user_name_api():
-    """API endpoint to get or update user name"""
-    if request.method == 'GET':
-        # Return current user name from session or cookie
-        user_name = request.cookies.get('user_name', '')
-        return jsonify({'user_name': user_name})
-    
-    elif request.method == 'POST':
-        # Update user name
-        data = request.get_json()
-        user_name = data.get('user_name', '').strip()
-        
-        if user_name:
-            response = jsonify({'success': True, 'user_name': user_name})
-            response.set_cookie('user_name', user_name, max_age=30*24*60*60)  # 30 days
-            return response
-        else:
-            return jsonify({'success': False, 'error': 'Nombre requerido'}), 400
 
 @app.route('/test-api')
 def test_api():

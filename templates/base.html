@@ -50,8 +50,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="changeUserName(); return false;" title="Cambiar nombre">
-                            <i class="fas fa-user-edit me-1"></i>
+                        <span class="nav-link">
+                            <i class="fas fa-user me-1"></i>
                             <span id="navUserName">
                                 {% if request.cookies.get('user_name') %}
                                     {{ request.cookies.get('user_name') }}
@@ -59,7 +59,7 @@
                                     Mi Perfil
                                 {% endif %}
                             </span>
-                        </a>
+                        </span>
                     </li>
                 </ul>
             </div>
