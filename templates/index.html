@@ -15,7 +15,13 @@
             <div class="emotion-form-card">
                 <form method="POST" action="{{ url_for('generate_phrase') }}" id="emotionForm">
                     <div class="mb-4">
-                        <label for="emotion" class="form-label">¿Cómo te sientes?</label>
+                        <label for="emotion" class="form-label" id="emotionLabel">
+                            {% if user_name %}
+                                Hola, {{ user_name }} ¿Cómo te sientes?
+                            {% else %}
+                                ¿Cómo te sientes?
+                            {% endif %}
+                        </label>
                         <textarea 
                             class="form-control emotion-input" 
                             id="emotion" 
@@ -106,6 +112,42 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Modal -->
+<div class="modal fade" id="welcomeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title">
+                    <i class="fas fa-feather-alt text-primary me-2"></i>
+                    ¡Bienvenido a Entrelíneas!
+                </h5>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-4">
+                    <i class="fas fa-heart text-danger fa-3x mb-3"></i>
+                    <h4>Transforma tus emociones en poesía</h4>
+                    <p class="text-muted">Para hacer tu experiencia más personal, ¿podrías decirme tu nombre?</p>
+                </div>
+                <form id="welcomeForm">
+                    <div class="mb-3">
+                        <input type="text" 
+                               class="form-control form-control-lg text-center" 
+                               id="userName" 
+                               name="user_name" 
+                               placeholder="Tu nombre"
+                               maxlength="30"
+                               required>
+                        <div class="form-text">Solo lo usaremos para personalizar tu experiencia</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-magic me-2"></i>¡Comenzar!
+                    </button>
+                </form>
             </div>
         </div>
     </div>

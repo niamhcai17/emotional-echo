@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas - EmotionalEcho{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">📊 Estadísticas</h1>
+            
+            <!-- Tarjetas de estadísticas principales -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">📝 Total de Frases</h5>
+                            <h2 class="text-primary">{{ stats.total_phrases }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">⭐ Favoritas</h5>
+                            <h2 class="text-warning">{{ stats.favorite_phrases }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">🌍 Idiomas</h5>
+                            <h2 class="text-success">{{ stats.language_stats|length }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Distribución por idioma -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🌍 Distribución por Idioma</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats.language_stats %}
+                        <div class="row">
+                            {% for language, count in stats.language_stats.items() %}
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if language == 'es' %}
+                                            <span class="badge bg-primary">🇪🇸 Español</span>
+                                        {% elif language == 'en' %}
+                                            <span class="badge bg-success">🇺🇸 English</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ language|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>{{ count }}</strong> frases
+                                        <a href="{{ url_for('collection_by_language', language=language) }}" 
+                                           class="btn btn-sm btn-outline-primary ms-2">
+                                            Ver
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2">
+                                    {% set percentage = (count / stats.total_phrases * 100) if stats.total_phrases > 0 else 0 %}
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentage }}%"
+                                         aria-valuenow="{{ percentage }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ "%.1f"|format(percentage) }}%
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No hay datos disponibles.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Enlaces rápidos -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔗 Accesos Rápidos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('collection') }}" class="btn btn-outline-primary w-100">
+                                📚 Ver Todas
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('favorites') }}" class="btn btn-outline-warning w-100">
+                                ⭐ Favoritas
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('collection_by_language', language='es') }}" class="btn btn-outline-info w-100">
+                                🇪🇸 Español
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('collection_by_language', language='en') }}" class="btn btn-outline-success w-100">
+                                🇺🇸 English
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
