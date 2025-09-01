@@ -16,6 +16,9 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Loader CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
 </head>
 <body>
     <!-- Navigation -->
@@ -49,17 +52,22 @@
                             <i class="fas fa-chart-bar me-1"></i>Estadísticas
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <span class="nav-link">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i>
                             <span id="navUserName">
-                                {% if request.cookies.get('user_name') %}
-                                    {{ request.cookies.get('user_name') }}
+                                {% if user_name %}
+                                    {{ user_name }}
                                 {% else %}
                                     Mi Perfil
                                 {% endif %}
                             </span>
-                        </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -99,5 +107,47 @@
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Loader JS -->
+    <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
+    
+    <!-- Supabase Auth Script -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuración de Supabase
+        const supabaseUrl = '{{ config.SUPABASE_URL }}';
+        const supabaseAnonKey = '{{ config.SUPABASE_ANON_KEY }}';
+        
+        if (supabaseUrl && supabaseAnonKey) {
+            const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+            
+            // Verificar autenticación al cargar la página
+            async function checkAuth() {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                        // Si no está autenticado, redirigir al landing
+                        if (window.location.pathname !== '/landing') {
+                            window.location.href = '/landing';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error verificando autenticación:', error);
+                }
+            }
+            
+            // Verificar autenticación al cargar la página
+            checkAuth();
+            
+            // Escuchar cambios en la autenticación
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = '/landing';
+                }
+            });
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
 </body>
 </html>

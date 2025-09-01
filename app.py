@@ -15,12 +15,13 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # Verificar si Supabase está configurado
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
 if SUPABASE_URL and SUPABASE_KEY:
     # Usar Supabase
     print("🔗 Configurando Supabase...")
     try:
-        from supabase_config import test_supabase_connection
+        from config.supabase_config import test_supabase_connection
         if test_supabase_connection():
             print("✅ Supabase configurado correctamente")
             USE_SUPABASE = True
@@ -35,10 +36,14 @@ else:
     print("📁 Usando SQLite local")
     USE_SUPABASE = False
 
+# Configurar variables de Supabase para el frontend
+app.config['SUPABASE_URL'] = SUPABASE_URL
+app.config['SUPABASE_ANON_KEY'] = SUPABASE_ANON_KEY
+
 # Configurar base de datos según disponibilidad
 if USE_SUPABASE:
     # Importar servicio de Supabase
-    from supabase_service import supabase_service
+    from services.supabase_service import supabase_service
     print("✅ Aplicación configurada con Supabase")
 else:
     # Configurar SQLite

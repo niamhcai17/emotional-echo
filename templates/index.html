@@ -13,7 +13,7 @@
 
             <!-- Main Form -->
             <div class="emotion-form-card">
-                <form method="POST" action="{{ url_for('generate_phrase') }}" id="emotionForm">
+                <form method="POST" action="{{ url_for('generate_phrase') }}" id="generateForm">
                     <div class="mb-4">
                         <label for="emotion" class="form-label" id="emotionLabel">
                             {% if user_name %}
@@ -62,17 +62,17 @@
             </div>
 
             <!-- Generated Phrase Display -->
-            {% if phrase %}
+            {% if generated_phrase %}
             <div class="phrase-result mt-5">
                 <div class="phrase-card">
                     <div class="phrase-text">
-                        "{{ phrase }}"
+                        "{{ generated_phrase }}"
                     </div>
                     <div class="phrase-actions mt-4">
-                        <button class="btn btn-outline-primary" onclick="copyToClipboard('{{ phrase }}')">
+                        <button class="btn btn-outline-primary" onclick="copyToClipboard('{{ generated_phrase }}')">
                             <i class="fas fa-copy me-2"></i>Copiar
                         </button>
-                        <button class="btn btn-outline-success" onclick="sharePhrase('{{ phrase }}')">
+                        <button class="btn btn-outline-success" onclick="sharePhrase('{{ generated_phrase }}')">
                             <i class="fas fa-share me-2"></i>Compartir
                         </button>
                         <button class="btn btn-outline-danger" onclick="toggleFavorite({{ phrase_id }})" id="favoriteBtn">
@@ -102,13 +102,13 @@
                     <div class="col-md-6 mb-3">
                         <div class="style-card">
                             <h5><i class="fas fa-book-open text-warning me-2"></i>Diario íntimo</h5>
-                            <p>Frases personales e íntimas, ideales para reflexionar sobre tus sentimientos.</p>
+                            <p>Expresiones profundas y personales como si fueran escritas en tu diario más íntimo.</p>
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <div class="style-card">
                             <h5><i class="fas fa-brain text-info me-2"></i>Reflexiva</h5>
-                            <p>Frases profundas que invitan a la contemplación y el autoconocimiento.</p>
+                            <p>Frases que invitan a la introspección y al análisis de tus sentimientos.</p>
                         </div>
                     </div>
                 </div>
@@ -116,21 +116,121 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-body text-center p-5">
-                <div class="loading-spinner mb-4">
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                </div>
-                <h5 class="text-muted mb-2">Creando tu frase poética</h5>
-                <p class="text-muted small mb-0">Transformando tus emociones en arte...</p>
-            </div>
-        </div>
-    </div>
-</div>
+{% block scripts %}
+<script>
+// Contador de caracteres
+document.getElementById('emotion').addEventListener('input', function() {
+    const charCount = this.value.length;
+    document.getElementById('charCount').textContent = charCount;
+    
+    // Cambiar color según la longitud
+    const charCountElement = document.getElementById('charCount');
+    if (charCount > 400) {
+        charCountElement.style.color = '#dc3545';
+    } else if (charCount > 300) {
+        charCountElement.style.color = '#ffc107';
+    } else {
+        charCountElement.style.color = '#6c757d';
+    }
+});
+
+// Función para copiar al portapapeles
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Mostrar notificación de éxito
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copiado!';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Error al copiar: ', err);
+        alert('Error al copiar al portapapeles');
+    });
+}
+
+// Función para compartir
+function sharePhrase(text) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Mi frase poética - Entrelíneas',
+            text: text,
+            url: window.location.href
+        });
+    } else {
+        // Fallback para navegadores que no soportan Web Share API
+        copyToClipboard(text);
+        alert('Frase copiada al portapapeles. ¡Compártela donde quieras!');
+    }
+}
+
+// Función para toggle de favoritos
+function toggleFavorite(phraseId) {
+    fetch(`/favorite/${phraseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const btn = document.getElementById('favoriteBtn');
+            if (data.is_favorite) {
+                btn.innerHTML = '<i class="fas fa-heart me-2"></i>Guardado';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-danger');
+            } else {
+                btn.innerHTML = '<i class="fas fa-heart me-2"></i>Guardar';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-outline-danger');
+            }
+        } else {
+            console.error('Error:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// Control del loader personalizado
+document.getElementById('generateForm').addEventListener('submit', function(e) {
+    // Validar que el formulario tenga contenido
+    const emotion = document.getElementById('emotion').value.trim();
+    if (!emotion) {
+        e.preventDefault();
+        alert('Por favor, describe cómo te sientes antes de continuar.');
+        return;
+    }
+    
+    // Mostrar loader
+    if (window.showLoader) {
+        window.showLoader();
+    }
+    
+    // Deshabilitar el botón para evitar múltiples envíos
+    const submitBtn = document.getElementById('generateBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
+    
+    // El formulario se enviará normalmente
+    // El loader se ocultará cuando la página se recargue con el resultado
+});
+
+// Si hay una frase generada, ocultar el loader
+{% if generated_phrase %}
+if (window.hideLoader) {
+    window.hideLoader();
+}
+{% endif %}
+</script>
 {% endblock %}

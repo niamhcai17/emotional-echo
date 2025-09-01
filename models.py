@@ -1,27 +1,67 @@
-from database import db
-from datetime import datetime
+#!/usr/bin/env python3
+"""
+Modelos de datos para la aplicación
+Definiciones de estructuras de datos compatibles con Supabase
+"""
 
-class Phrase(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(50), nullable=True)  # Nombre del usuario
-    original_emotion = db.Column(db.Text, nullable=False)
-    style = db.Column(db.String(50), nullable=False)
-    generated_phrase = db.Column(db.String(200), nullable=False)
-    language = db.Column(db.String(2), default='es')  # 'es' for Spanish, 'en' for English
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_favorite = db.Column(db.Boolean, default=False)
+from datetime import datetime
+from typing import Optional, Dict, Any
+from dataclasses import dataclass, asdict
+
+@dataclass
+class User:
+    """Modelo de usuario"""
+    id: str
+    email: str
+    full_name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
-    def __repr__(self):
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte el modelo a diccionario"""
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'User':
+        """Crea un usuario desde un diccionario"""
+        return cls(**data)
+
+@dataclass
+class Phrase:
+    """Modelo de frase poética"""
+    id: str
+    user_id: str
+    original_emotion: str
+    style: str
+    generated_phrase: str
+    language: str = 'es'
+    is_favorite: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convierte el modelo a diccionario"""
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Phrase':
+        """Crea una frase desde un diccionario"""
+        return cls(**data)
+    
+    def __repr__(self) -> str:
         return f'<Phrase {self.id}: {self.generated_phrase[:30]}...>'
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_name': self.user_name,
-            'original_emotion': self.original_emotion,
-            'style': self.style,
-            'generated_phrase': self.generated_phrase,
-            'language': self.language,
-            'created_at': self.created_at.isoformat(),
-            'is_favorite': self.is_favorite
-        }
+
+# Constantes para estilos de frases
+STYLE_OPTIONS = {
+    'poetica_minimalista': 'Poética Minimalista',
+    'romantica_clasica': 'Romántica Clásica',
+    'moderna_urbana': 'Moderna Urbana',
+    'filosofica_profunda': 'Filosófica Profunda',
+    'naturaleza_organica': 'Naturaleza Orgánica'
+}
+
+# Constantes para idiomas
+LANGUAGE_OPTIONS = {
+    'es': 'Español',
+    'en': 'English'
+}

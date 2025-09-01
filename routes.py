@@ -1,63 +1,236 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, session
 from app import app, USE_SUPABASE
-from openai_service import generate_poetic_phrase
+from services.openai_service import generate_poetic_phrase
+from functools import wraps
 
 # Importar servicios según configuración
 if USE_SUPABASE:
-    from supabase_service import supabase_service
+    from services.supabase_service import supabase_service
+    from config.supabase_config import get_supabase_client
 else:
     from app import db
     from models import Phrase
 
+# Decorador para verificar autenticación
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if USE_SUPABASE:
+            # Verificar autenticación en Supabase
+            supabase = get_supabase_client()
+            try:
+                user = supabase.auth.get_user()
+                if not user.user:
+                    return redirect(url_for('landing'))
+                return f(*args, **kwargs)
+            except:
+                return redirect(url_for('landing'))
+        else:
+            # Verificar nombre de usuario en cookies (modo legacy)
+            user_name = request.cookies.get('user_name', '')
+            if not user_name:
+                return redirect(url_for('landing'))
+            return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
+@login_required
 def index():
     """Main page with emotion input and style selection."""
-    # Verificar si el usuario tiene un nombre guardado
-    user_name = request.cookies.get('user_name', '')
-    
-    if not user_name:
-        # Si no tiene nombre, redirigir al landing
+    if USE_SUPABASE:
+        # Obtener información del usuario autenticado
+        supabase = get_supabase_client()
+        try:
+            user = supabase.auth.get_user()
+            if user.user:
+                # Obtener información del usuario desde la tabla users
+                user_info = supabase_service.get_user_info(user.user.id)
+                user_name = user_info.get('full_name', 'Usuario') if user_info else 'Usuario'
+                return render_template('index.html', user_name=user_name, user_id=user.user.id)
+        except:
+            pass
         return redirect(url_for('landing'))
-    
-    return render_template('index.html', user_name=user_name)
+    else:
+        # Modo legacy con cookies
+        user_name = request.cookies.get('user_name', '')
+        if not user_name:
+            return redirect(url_for('landing'))
+        return render_template('index.html', user_name=user_name)
 
 @app.route('/landing', methods=['GET', 'POST'])
 def landing():
-    """Landing page for user registration"""
+    """Landing page for user authentication"""
     if request.method == 'POST':
-        user_name = request.form.get('user_name', '').strip()
-        
-        if not user_name:
-            flash('Por favor, ingresa tu nombre.', 'error')
-            return render_template('landing.html')
-        
-        if len(user_name) > 30:
-            flash('El nombre es demasiado largo. Máximo 30 caracteres.', 'error')
-            return render_template('landing.html')
-        
-        # Crear respuesta con cookie
-        response = redirect(url_for('index'))
-        response.set_cookie('user_name', user_name, max_age=365*24*60*60)  # 1 año
-        
-        flash(f'¡Bienvenido, {user_name}! Ya puedes comenzar a crear frases poéticas.', 'success')
-        return response
+        # Esta ruta ya no maneja POST para nombres, solo GET para mostrar el login
+        return redirect(url_for('landing'))
+    
+    # Verificar si ya está autenticado
+    if USE_SUPABASE:
+        supabase = get_supabase_client()
+        try:
+            user = supabase.auth.get_user()
+            if user.user:
+                return redirect(url_for('index'))
+        except:
+            pass
     
     return render_template('landing.html')
 
+@app.route('/login', methods=['POST'])
+def login():
+    """Handle login form submission with username, email, and password"""
+    if not USE_SUPABASE:
+        flash('Autenticación no disponible en modo local', 'error')
+        return redirect(url_for('landing'))
+    
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+    
+    if not username or not email or not password:
+        flash('Por favor, completa todos los campos.', 'error')
+        return redirect(url_for('landing'))
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Intentar iniciar sesión con email y contraseña
+        response = supabase.auth.sign_in_with_password({
+            'email': email,
+            'password': password
+        })
+        
+        if response.data and response.data.user:
+            # Verificar si el usuario existe en la tabla users
+            user_info = supabase_service.get_user_info(response.data.user.id)
+            
+            if user_info:
+                # Usuario existe, actualizar username si es necesario
+                if user_info.get('user_name') != username:
+                    supabase_service.update_user_info(response.data.user.id, {'user_name': username})
+            else:
+                # Usuario no existe en la tabla users, crearlo
+                supabase_service.create_user(response.data.user.id, email, username)
+            
+            flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
+            return redirect(url_for('landing'))
+            
+    except Exception as e:
+        print(f"Error en login: {e}")
+        flash('Error al iniciar sesión. Por favor, inténtalo de nuevo.', 'error')
+        return redirect(url_for('landing'))
+
+@app.route('/register', methods=['POST'])
+def register():
+    """Handle user registration with username, email, and password"""
+    if not USE_SUPABASE:
+        flash('Registro no disponible en modo local', 'error')
+        return redirect(url_for('landing'))
+    
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+    
+    if not username or not email or not password:
+        flash('Por favor, completa todos los campos.', 'error')
+        return redirect(url_for('landing'))
+    
+    if len(password) < 6:
+        flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+        return redirect(url_for('landing'))
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Crear nuevo usuario en Supabase Auth
+        response = supabase.auth.sign_up({
+            'email': email,
+            'password': password,
+            'options': {
+                'data': {
+                    'user_name': username
+                }
+            }
+        })
+        
+        if response.data and response.data.user:
+            # Crear usuario en la tabla users
+            user_created = supabase_service.create_user(response.data.user.id, email, username)
+            
+            if user_created:
+                flash('¡Cuenta creada exitosamente! Por favor, verifica tu email para confirmar tu cuenta.', 'success')
+            else:
+                flash('Cuenta creada pero hubo un problema al guardar tu información. Por favor, contacta soporte.', 'warning')
+            
+            return redirect(url_for('landing'))
+        else:
+            flash('Error al crear la cuenta. Por favor, inténtalo de nuevo.', 'error')
+            return redirect(url_for('landing'))
+            
+    except Exception as e:
+        print(f"Error en registro: {e}")
+        if "already registered" in str(e).lower():
+            flash('Este email ya está registrado. Por favor, inicia sesión.', 'error')
+        else:
+            flash('Error al crear la cuenta. Por favor, inténtalo de nuevo.', 'error')
+        return redirect(url_for('landing'))
+
+@app.route('/auth/callback')
+def auth_callback():
+    """Callback para autenticación de Google"""
+    if not USE_SUPABASE:
+        flash('Autenticación no disponible en modo local', 'error')
+        return redirect(url_for('landing'))
+    
+    try:
+        supabase = get_supabase_client()
+        # El token se maneja automáticamente por Supabase
+        user = supabase.auth.get_user()
+        
+        if user.user:
+            flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Error en la autenticación. Por favor, inténtalo de nuevo.', 'error')
+            return redirect(url_for('landing'))
+            
+    except Exception as e:
+        print(f"Error en auth callback: {e}")
+        flash('Error en la autenticación. Por favor, inténtalo de nuevo.', 'error')
+        return redirect(url_for('landing'))
+
+@app.route('/logout')
+def logout():
+    """Cerrar sesión"""
+    if USE_SUPABASE:
+        try:
+            supabase = get_supabase_client()
+            supabase.auth.sign_out()
+            flash('Has cerrado sesión correctamente.', 'info')
+        except:
+            pass
+    else:
+        # Modo legacy: limpiar cookie
+        response = redirect(url_for('landing'))
+        response.delete_cookie('user_name')
+        flash('Has cerrado sesión correctamente.', 'info')
+        return response
+    
+    return redirect(url_for('landing'))
+
 @app.route('/generate', methods=['POST'])
+@login_required
 def generate_phrase():
     """Generate a poetic phrase from user emotion and style"""
     emotion = request.form.get('emotion', '').strip()
     style = request.form.get('style', 'poetica_minimalista')
-    user_name = request.cookies.get('user_name', '').strip()  # Obtener de cookies
     
     if not emotion:
         flash('Por favor, describe cómo te sientes.', 'error')
         return redirect(url_for('index'))
-    
-    if not user_name:
-        flash('No se encontró tu nombre. Por favor, vuelve a ingresar tu nombre.', 'error')
-        return redirect(url_for('landing'))
     
     if len(emotion) > 500:
         flash('La descripción es demasiado larga. Máximo 500 caracteres.', 'error')
@@ -76,15 +249,30 @@ def generate_phrase():
         
         # Save to database
         if USE_SUPABASE:
+            # Obtener user_id del usuario autenticado
+            supabase = get_supabase_client()
+            user = supabase.auth.get_user()
+            user_id = user.user.id if user.user else None
+            
+            if not user_id:
+                flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+                return redirect(url_for('landing'))
+            
             phrase = supabase_service.create_phrase(
+                user_id=user_id,
                 original_emotion=emotion,
                 style=style,
                 generated_phrase=generated_phrase,
-                language=language,
-                user_name=user_name
+                language=language
             )
             phrase_id = phrase['id'] if phrase else None
         else:
+            # Modo legacy
+            user_name = request.cookies.get('user_name', '').strip()
+            if not user_name:
+                flash('No se encontró tu nombre. Por favor, vuelve a ingresar tu nombre.', 'error')
+                return redirect(url_for('landing'))
+            
             phrase = Phrase(
                 user_name=user_name,
                 original_emotion=emotion,
@@ -98,37 +286,43 @@ def generate_phrase():
         
         if phrase_id:
             return render_template('index.html', 
-                                 phrase=generated_phrase, 
-                                 phrase_id=phrase_id,
-                                 original_emotion=emotion,
-                                 style=style,
-                                 user_name=user_name)
+                                user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario',
+                                generated_phrase=generated_phrase,
+                                original_emotion=emotion,
+                                style=style,
+                                phrase_id=phrase_id)
         else:
-            flash('Error al guardar la frase en la base de datos.', 'error')
+            flash('Error al guardar la frase. Por favor, inténtalo de nuevo.', 'error')
             return redirect(url_for('index'))
-    
+            
     except Exception as e:
-        print(f"Error generating phrase: {e}")
-        flash('Hubo un error al generar tu frase. Inténtalo de nuevo.', 'error')
+        print(f"Error generando frase: {e}")
+        flash('Error inesperado. Por favor, inténtalo más tarde.', 'error')
         return redirect(url_for('index'))
 
 @app.route('/favorite/<int:phrase_id>', methods=['POST'])
+@login_required
 def toggle_favorite(phrase_id):
     """Toggle favorite status of a phrase"""
     try:
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'No autorizado'})
         
         if USE_SUPABASE:
             # Verificar que la frase pertenece al usuario
             phrase = supabase_service.get_phrase_by_id(phrase_id)
-            if phrase and phrase.get('user_name') == user_name:
+            if phrase and phrase.get('user_id') == user_id:
                 is_favorite = supabase_service.toggle_favorite(phrase_id)
             else:
                 return jsonify({'success': False, 'error': 'No autorizado'})
         else:
             phrase = Phrase.query.get_or_404(phrase_id)
             # Verificar que la frase pertenece al usuario
-            if phrase.user_name == user_name:
+            if phrase.user_name == request.cookies.get('user_name', ''): # Assuming user_name is the key for legacy
                 phrase.is_favorite = not phrase.is_favorite
                 db.session.commit()
                 is_favorite = phrase.is_favorite
@@ -140,44 +334,59 @@ def toggle_favorite(phrase_id):
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/collection')
+@login_required
 def collection():
     """View all saved phrases"""
     try:
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            return redirect(url_for('landing'))
         
         if USE_SUPABASE:
-            phrases = supabase_service.get_all_phrases(user_name=user_name)
+            phrases = supabase_service.get_all_phrases(user_id=user_id)
         else:
-            if user_name:
-                phrases = Phrase.query.filter_by(user_name=user_name).order_by(Phrase.created_at.desc()).all()
+            if user_id:
+                phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).order_by(Phrase.created_at.desc()).all() # Assuming user_name is the key for legacy
             else:
                 phrases = Phrase.query.order_by(Phrase.created_at.desc()).all()
         
-        return render_template('collection.html', phrases=phrases, user_name=user_name)
+        return render_template('collection.html', phrases=phrases, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
     except Exception as e:
         flash('Error al cargar la colección.', 'error')
         return redirect(url_for('index'))
 
 @app.route('/collection/favorites')
+@login_required
 def favorites():
     """View favorite phrases only"""
     try:
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            return redirect(url_for('landing'))
         
         if USE_SUPABASE:
-            phrases = supabase_service.get_favorite_phrases(user_name=user_name)
+            phrases = supabase_service.get_favorite_phrases(user_id=user_id)
         else:
-            if user_name:
-                phrases = Phrase.query.filter_by(user_name=user_name, is_favorite=True).order_by(Phrase.created_at.desc()).all()
+            if user_id:
+                phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).order_by(Phrase.created_at.desc()).all() # Assuming user_name is the key for legacy
             else:
                 phrases = Phrase.query.filter_by(is_favorite=True).order_by(Phrase.created_at.desc()).all()
         
-        return render_template('collection.html', phrases=phrases, show_favorites=True, user_name=user_name)
+        return render_template('collection.html', phrases=phrases, show_favorites=True, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
     except Exception as e:
         flash('Error al cargar los favoritos.', 'error')
         return redirect(url_for('index'))
 
 @app.route('/collection/language/<language>')
+@login_required
 def collection_by_language(language):
     """View phrases filtered by language"""
     try:
@@ -185,36 +394,49 @@ def collection_by_language(language):
             flash('Idioma no válido.', 'error')
             return redirect(url_for('collection'))
         
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            return redirect(url_for('landing'))
         
         if USE_SUPABASE:
-            phrases = supabase_service.get_phrases_by_language(language, user_name=user_name)
+            phrases = supabase_service.get_phrases_by_language(language, user_id=user_id)
         else:
-            if user_name:
-                phrases = Phrase.query.filter_by(user_name=user_name, language=language).order_by(Phrase.created_at.desc()).all()
+            if user_id:
+                phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).order_by(Phrase.created_at.desc()).all() # Assuming user_name is the key for legacy
             else:
                 phrases = Phrase.query.filter_by(language=language).order_by(Phrase.created_at.desc()).all()
         
         language_name = 'Español' if language == 'es' else 'English'
-        return render_template('collection.html', phrases=phrases, language_filter=language, language_name=language_name, user_name=user_name)
+        return render_template('collection.html', phrases=phrases, language_filter=language, language_name=language_name, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
     except Exception as e:
         flash('Error al cargar las frases por idioma.', 'error')
         return redirect(url_for('collection'))
 
 @app.route('/stats')
+@login_required
 def stats():
     """View database statistics"""
     try:
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            return redirect(url_for('landing'))
         
         if USE_SUPABASE:
-            stats_data = supabase_service.get_stats(user_name=user_name)
+            stats_data = supabase_service.get_stats(user_id=user_id)
         else:
             # Calcular estadísticas para SQLite
-            if user_name:
-                total_phrases = Phrase.query.filter_by(user_name=user_name).count()
-                favorite_phrases = Phrase.query.filter_by(user_name=user_name, is_favorite=True).count()
-                phrases = Phrase.query.filter_by(user_name=user_name).all()
+            if user_id:
+                total_phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).count() # Assuming user_name is the key for legacy
+                favorite_phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).count() # Assuming user_name is the key for legacy
+                phrases = Phrase.query.filter_by(user_name=request.cookies.get('user_name', '')).all() # Assuming user_name is the key for legacy
             else:
                 total_phrases = Phrase.query.count()
                 favorite_phrases = Phrase.query.filter_by(is_favorite=True).count()
@@ -230,7 +452,7 @@ def stats():
                 'total_phrases': total_phrases,
                 'favorite_phrases': favorite_phrases,
                 'language_stats': language_stats,
-                'user_name': user_name
+                'user_name': request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario' # Assuming user_name is the key for legacy
             }
         
         return render_template('stats.html', stats=stats_data)
@@ -239,15 +461,22 @@ def stats():
         return redirect(url_for('index'))
 
 @app.route('/delete/<int:phrase_id>', methods=['POST'])
+@login_required
 def delete_phrase(phrase_id):
     """Delete a phrase from collection"""
     try:
-        user_name = request.cookies.get('user_name', '')
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            return redirect(url_for('landing'))
         
         if USE_SUPABASE:
             # Verificar que la frase pertenece al usuario
             phrase = supabase_service.get_phrase_by_id(phrase_id)
-            if phrase and phrase.get('user_name') == user_name:
+            if phrase and phrase.get('user_id') == user_id:
                 success = supabase_service.delete_phrase(phrase_id)
             else:
                 flash('No tienes permisos para eliminar esta frase.', 'error')
@@ -255,7 +484,7 @@ def delete_phrase(phrase_id):
         else:
             phrase = Phrase.query.get_or_404(phrase_id)
             # Verificar que la frase pertenece al usuario
-            if phrase.user_name == user_name:
+            if phrase.user_name == request.cookies.get('user_name', ''): # Assuming user_name is the key for legacy
                 db.session.delete(phrase)
                 db.session.commit()
                 success = True
@@ -274,9 +503,17 @@ def delete_phrase(phrase_id):
         return redirect(url_for('collection'))
 
 @app.route('/api/phrase/<int:phrase_id>')
+@login_required
 def get_phrase_api(phrase_id):
     """API endpoint to get phrase data"""
     try:
+        supabase = get_supabase_client()
+        user = supabase.auth.get_user()
+        user_id = user.user.id if user.user else None
+        
+        if not user_id:
+            return jsonify({'error': 'No autorizado'}), 401
+        
         if USE_SUPABASE:
             phrase = supabase_service.get_phrase_by_id(phrase_id)
         else:
@@ -291,7 +528,7 @@ def get_phrase_api(phrase_id):
 def test_api():
     """Test OpenAI API status"""
     try:
-        from openai_service import client
+        from services.openai_service import client
         # Simple test with minimal tokens
         response = client.chat.completions.create(
             model="gpt-4o",

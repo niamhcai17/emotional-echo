@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Loader - Entrelíneas</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Loader CSS -->
+    <link rel="stylesheet" href="static/css/loader.css">
+    
+    <style>
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .demo-title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .demo-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        
+        .demo-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+        
+        .demo-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .demo-info h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .demo-info ul {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        .demo-info li {
+            margin-bottom: 8px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .feature-card h4 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .feature-card p {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="demo-title">🖊️ Demo del Loader Adaptativo - Entrelíneas</h1>
+        
+        <div class="demo-buttons">
+            <button class="demo-btn btn-primary" onclick="showLoader()">
+                🚀 Mostrar Loader
+            </button>
+            
+            <button class="demo-btn btn-success" onclick="hideLoader()">
+                ✨ Ocultar Loader
+            </button>
+            
+            <button class="demo-btn btn-warning" onclick="showLoaderError('Error de conexión con la IA')">
+                ❌ Mostrar Error
+            </button>
+            
+            <button class="demo-btn btn-info" onclick="simulateFastGeneration()">
+                ⚡ Generación Rápida (2s)
+            </button>
+            
+            <button class="demo-btn btn-warning" onclick="simulateSlowGeneration()">
+                🐌 Generación Lenta (8s)
+            </button>
+            
+            <button class="demo-btn btn-danger" onclick="simulateVerySlowGeneration()">
+                🌐 Conexión Muy Lenta (15s)
+            </button>
+        </div>
+        
+        <div class="demo-info">
+            <h3>🎯 Nuevas Funcionalidades del Loader</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>⏱️ Timing Adaptativo</h4>
+                    <p>Muestra el tiempo real de generación y se adapta a conexiones lentas</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🤖 Mensajes Realistas</h4>
+                    <p>Mensajes que reflejan el proceso real de IA, no falsas expectativas</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Feedback Inteligente</h4>
+                    <p>Diferentes mensajes según la velocidad de respuesta</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎨 Animación Suave</h4>
+                    <p>Solo el lápiz escribiendo, sin distracciones innecesarias</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-info">
+            <h3>🔧 Cómo funciona para IA Generativa</h3>
+            <ul>
+                <li><strong>0-3 segundos:</strong> "Conectando con la IA..." → "Preparando la generación..." → "Analizando tu emoción..."</li>
+                <li><strong>3+ segundos:</strong> "La IA está procesando tu solicitud..." → "Generando la frase perfecta..." → "Esto puede tomar unos segundos más..."</li>
+                <li><strong>Feedback final:</strong> Mensaje personalizado según el tiempo total de respuesta</li>
+                <li><strong>Timer visual:</strong> Muestra el tiempo transcurrido en tiempo real</li>
+                <li><strong>Manejo de errores:</strong> Mensajes claros cuando algo falla</li>
+            </ul>
+        </div>
+        
+        <div class="demo-info">
+            <h3>💡 Ventajas para tu App</h3>
+            <ul>
+                <li><strong>Transparencia:</strong> Los usuarios saben exactamente qué está pasando</li>
+                <li><strong>Paciencia:</strong> Mensajes que mantienen la calma en conexiones lentas</li>
+                <li><strong>Realismo:</strong> No promete cosas que no puede cumplir</li>
+                <li><strong>Feedback:</strong> Información útil sobre el tiempo de respuesta</li>
+                <li><strong>Experiencia:</strong> Animación simple pero atractiva</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loader JS -->
+    <script src="static/js/loader.js"></script>
+    
+    <script>
+        // Simulaciones de diferentes velocidades de conexión
+        
+        function simulateFastGeneration() {
+            showLoader();
+            setTimeout(() => {
+                hideLoader();
+            }, 2000);
+        }
+        
+        function simulateSlowGeneration() {
+            showLoader();
+            setTimeout(() => {
+                hideLoader();
+            }, 8000);
+        }
+        
+        function simulateVerySlowGeneration() {
+            showLoader();
+            setTimeout(() => {
+                hideLoader();
+            }, 15000);
+        }
+        
+        // Demo adicional: Simular generación real con mensajes personalizados
+        function simulateRealGeneration() {
+            showLoader();
+            
+            // Simular diferentes etapas
+            setTimeout(() => {
+                showLoaderMessage('Validando tu emoción...', 1000);
+            }, 1000);
+            
+            setTimeout(() => {
+                showLoaderMessage('Enviando a la IA...', 1000);
+            }, 2000);
+            
+            setTimeout(() => {
+                showLoaderMessage('Esperando respuesta...', 1000);
+            }, 3000);
+            
+            setTimeout(() => {
+                hideLoader();
+            }, 4000);
+        }
+        
+        // Agregar botón de simulación real
+        const demoButtons = document.querySelector('.demo-buttons');
+        const realBtn = document.createElement('button');
+        realBtn.className = 'demo-btn btn-primary';
+        realBtn.innerHTML = '🎭 Simulación Real';
+        realBtn.onclick = simulateRealGeneration;
+        demoButtons.appendChild(realBtn);
+    </script>
+</body>
+</html>
