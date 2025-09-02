@@ -156,6 +156,8 @@ def register():
             }
         })
         
+        print(f"Respuesta de registro: {response}")
+        
         if response.data and response.data.user:
             # Crear usuario en la tabla users
             user_created = supabase_service.create_user(response.data.user.id, email, username)
@@ -172,35 +174,19 @@ def register():
             
     except Exception as e:
         print(f"Error en registro: {e}")
-        if "already registered" in str(e).lower():
+        error_message = str(e).lower()
+        
+        if "already registered" in error_message or "already exists" in error_message:
             flash('Este email ya está registrado. Por favor, inicia sesión.', 'error')
+        elif "invalid email" in error_message:
+            flash('Por favor, ingresa un email válido.', 'error')
+        elif "password" in error_message:
+            flash('La contraseña debe tener al menos 6 caracteres.', 'error')
         else:
-            flash('Error al crear la cuenta. Por favor, inténtalo de nuevo.', 'error')
+            flash(f'Error al crear la cuenta: {str(e)}', 'error')
         return redirect(url_for('landing'))
 
-@app.route('/auth/callback')
-def auth_callback():
-    """Callback para autenticación de Google"""
-    if not USE_SUPABASE:
-        flash('Autenticación no disponible en modo local', 'error')
-        return redirect(url_for('landing'))
-    
-    try:
-        supabase = get_supabase_client()
-        # El token se maneja automáticamente por Supabase
-        user = supabase.auth.get_user()
-        
-        if user.user:
-            flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Error en la autenticación. Por favor, inténtalo de nuevo.', 'error')
-            return redirect(url_for('landing'))
-            
-    except Exception as e:
-        print(f"Error en auth callback: {e}")
-        flash('Error en la autenticación. Por favor, inténtalo de nuevo.', 'error')
-        return redirect(url_for('landing'))
+
 
 @app.route('/logout')
 def logout():
