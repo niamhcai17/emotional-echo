@@ -1,8 +1,12 @@
 import os
 import logging
+from dotenv import load_dotenv
 
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Configure logging for debugging
 logging.basicConfig(level=logging.DEBUG)
@@ -26,39 +30,30 @@ if SUPABASE_URL and SUPABASE_KEY:
             print("✅ Supabase configurado correctamente")
             USE_SUPABASE = True
         else:
-            print("⚠️  Error en Supabase, usando SQLite local")
+            print("❌ Error en Supabase. Verifica tu configuración.")
             USE_SUPABASE = False
     except Exception as e:
-        print(f"⚠️  Error configurando Supabase: {e}")
+        print(f"❌ Error configurando Supabase: {e}")
         USE_SUPABASE = False
 else:
-    # Usar SQLite local
-    print("📁 Usando SQLite local")
+    # No hay configuración de Supabase
+    print("❌ No se encontró configuración de Supabase")
+    print("📝 Asegúrate de tener las variables SUPABASE_URL y SUPABASE_KEY en tu archivo .env")
     USE_SUPABASE = False
 
 # Configurar variables de Supabase para el frontend
 app.config['SUPABASE_URL'] = SUPABASE_URL
 app.config['SUPABASE_ANON_KEY'] = SUPABASE_ANON_KEY
 
-# Configurar base de datos según disponibilidad
+# Configurar base de datos
 if USE_SUPABASE:
     # Importar servicio de Supabase
     from services.supabase_service import supabase_service
     print("✅ Aplicación configurada con Supabase")
 else:
-    # Configurar SQLite
-    from database import db
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///entrelineas.db"
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
-    db.init_app(app)
-    
-    with app.app_context():
-        import models
-        db.create_all()
-    print("✅ Aplicación configurada con SQLite local")
+    print("❌ No se puede iniciar la aplicación sin Supabase configurado")
+    print("📝 Por favor, configura Supabase en tu archivo .env")
+    exit(1)
 
 # Import routes
 from routes import *

@@ -6,7 +6,7 @@ Servicio para manejar operaciones de base de datos con Supabase
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from supabase_config import get_supabase_client
+from config.supabase_config import get_supabase_client
 
 # Cargar variables de entorno desde .env
 load_dotenv()
