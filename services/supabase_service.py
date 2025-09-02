@@ -39,14 +39,19 @@ class SupabaseService:
                 'updated_at': datetime.utcnow().isoformat()
             }
             
+            print(f"Intentando crear usuario: {data}")
             response = self.supabase.table('users').insert(data).execute()
             
             if response.data:
+                print(f"Usuario creado exitosamente: {response.data[0]}")
                 return response.data[0]
             return None
             
         except Exception as e:
             print(f"Error creando usuario: {e}")
+            print(f"Tipo de error: {type(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def update_user_info(self, user_id, update_data):

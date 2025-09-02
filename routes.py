@@ -176,6 +176,10 @@ def register():
             
     except Exception as e:
         print(f"Error en registro: {e}")
+        print(f"Tipo de error: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        
         error_message = str(e).lower()
         
         if "already registered" in error_message or "already exists" in error_message:
@@ -184,6 +188,8 @@ def register():
             flash('Por favor, ingresa un email válido.', 'error')
         elif "password" in error_message:
             flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+        elif "database error" in error_message:
+            flash('Error en la base de datos. Por favor, contacta soporte.', 'error')
         else:
             flash(f'Error al crear la cuenta: {str(e)}', 'error')
         return redirect(url_for('landing'))
