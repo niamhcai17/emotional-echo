@@ -99,16 +99,29 @@ def login():
             'password': password
         })
         
-        if response.data and response.data.user:
+        print(f"Respuesta de login: {response}")
+        print(f"Tipo de respuesta: {type(response)}")
+        
+        # Manejar la nueva estructura de respuesta de Supabase
+        if hasattr(response, 'data') and response.data and hasattr(response.data, 'user'):
+            user = response.data.user
+        elif hasattr(response, 'user'):
+            user = response.user
+        else:
+            print(f"Estructura de respuesta inesperada: {response}")
+            flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
+            return redirect(url_for('landing'))
+        
+        if user:
             # Verificar si el usuario existe en la tabla users
-            user_info = supabase_service.get_user_info(response.data.user.id)
+            user_info = supabase_service.get_user_info(user.id)
             
             if user_info:
                 flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
                 return redirect(url_for('index'))
             else:
                 # Usuario no existe en la tabla users, crear uno básico
-                supabase_service.create_user(response.data.user.id, email, email.split('@')[0])
+                supabase_service.create_user(user.id, email, email.split('@')[0])
                 flash('¡Bienvenido! Tu cuenta ha sido configurada.', 'success')
                 return redirect(url_for('index'))
         else:
@@ -159,10 +172,22 @@ def register():
         })
         
         print(f"Respuesta de registro: {response}")
+        print(f"Tipo de respuesta: {type(response)}")
+        print(f"Atributos de respuesta: {dir(response)}")
         
-        if response.data and response.data.user:
+        # Manejar la nueva estructura de respuesta de Supabase
+        if hasattr(response, 'data') and response.data and hasattr(response.data, 'user'):
+            user = response.data.user
+        elif hasattr(response, 'user'):
+            user = response.user
+        else:
+            print(f"Estructura de respuesta inesperada: {response}")
+            flash('Error al crear la cuenta. Por favor, inténtalo de nuevo.', 'error')
+            return redirect(url_for('landing'))
+        
+        if user:
             # Crear usuario en la tabla users
-            user_created = supabase_service.create_user(response.data.user.id, email, username)
+            user_created = supabase_service.create_user(user.id, email, username)
             
             if user_created:
                 flash('¡Cuenta creada exitosamente! Por favor, verifica tu email para confirmar tu cuenta.', 'success')

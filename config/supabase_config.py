@@ -19,7 +19,23 @@ def get_supabase_client() -> Client:
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise ValueError("SUPABASE_URL y SUPABASE_KEY deben estar configurados")
     
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        # Intentar crear cliente con configuración estándar
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"Error con configuración estándar: {e}")
+        # Si falla, intentar con configuración SSL deshabilitada
+        try:
+            import httpx
+            http_client = httpx.Client(verify=False, timeout=30.0)
+            return create_client(
+                SUPABASE_URL, 
+                SUPABASE_KEY,
+                options={'httpx_client': http_client}
+            )
+        except Exception as e2:
+            print(f"Error con SSL deshabilitado: {e2}")
+            raise e2
 
 def test_supabase_connection():
     """Prueba la conexión con Supabase"""
@@ -40,6 +56,9 @@ def test_supabase_connection():
         
     except Exception as e:
         print(f"❌ Error conectando a Supabase: {e}")
+        print(f"Tipo de error: {type(e)}")
+        import traceback
+        traceback.print_exc()
         print("💡 Asegúrate de que las tablas 'users' y 'phrases' existan en tu base de datos")
         return False
 
