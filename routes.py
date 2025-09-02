@@ -78,16 +78,15 @@ def landing():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Handle login form submission with username, email, and password"""
+    """Handle login form submission with email and password"""
     if not USE_SUPABASE:
         flash('Autenticación no disponible en modo local', 'error')
         return redirect(url_for('landing'))
     
-    username = request.form.get('username', '').strip()
     email = request.form.get('email', '').strip()
     password = request.form.get('password', '')
     
-    if not username or not email or not password:
+    if not email or not password:
         flash('Por favor, completa todos los campos.', 'error')
         return redirect(url_for('landing'))
     
@@ -105,22 +104,25 @@ def login():
             user_info = supabase_service.get_user_info(response.data.user.id)
             
             if user_info:
-                # Usuario existe, actualizar username si es necesario
-                if user_info.get('user_name') != username:
-                    supabase_service.update_user_info(response.data.user.id, {'user_name': username})
+                flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
+                return redirect(url_for('index'))
             else:
-                # Usuario no existe en la tabla users, crearlo
-                supabase_service.create_user(response.data.user.id, email, username)
-            
-            flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
-            return redirect(url_for('index'))
+                # Usuario no existe en la tabla users, crear uno básico
+                supabase_service.create_user(response.data.user.id, email, email.split('@')[0])
+                flash('¡Bienvenido! Tu cuenta ha sido configurada.', 'success')
+                return redirect(url_for('index'))
         else:
             flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
             return redirect(url_for('landing'))
             
     except Exception as e:
         print(f"Error en login: {e}")
-        flash('Error al iniciar sesión. Por favor, inténtalo de nuevo.', 'error')
+        error_message = str(e).lower()
+        
+        if "invalid login credentials" in error_message:
+            flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
+        else:
+            flash('Error al iniciar sesión. Por favor, inténtalo de nuevo.', 'error')
         return redirect(url_for('landing'))
 
 @app.route('/register', methods=['POST'])
