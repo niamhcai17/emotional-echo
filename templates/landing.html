@@ -235,7 +235,7 @@
         // Configuración de Supabase
         const supabaseUrl = '{{ config.SUPABASE_URL }}';
         const supabaseAnonKey = '{{ config.SUPABASE_ANON_KEY }}';
-        const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey); // Añadido supabaseClient
 
         // Toggle entre login y registro
         document.getElementById('loginToggle').addEventListener('click', function() {
@@ -254,7 +254,7 @@
 
         // Verificar si ya está autenticado
         async function checkAuth() {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabaseClient.auth.getUser();
             if (user) {
                 // Si ya está autenticado, redirigir a la página principal
                 window.location.href = '/';
