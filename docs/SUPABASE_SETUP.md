@@ -41,25 +41,115 @@ Una vez creado el proyecto:
    - **Project URL** (SUPABASE_URL)
    - **anon public** key (SUPABASE_KEY)
 
-### **Paso 4: Crear tabla en Supabase**
+### **Paso 4: Crear tablas, políticas y trigger en Supabase**
 
-1. Ve a **Table Editor**
-2. Haz clic en **"New table"**
-3. Configura la tabla:
+Ejecuta el siguiente SQL en el editor de SQL de Supabase para crear las tablas `users` y `phrases`, habilitar RLS con políticas seguras y sincronizar automáticamente `auth.users → public.users`:
 
 ```sql
-CREATE TABLE phrase (
-    id SERIAL PRIMARY KEY,
-    original_emotion TEXT NOT NULL,
-    style VARCHAR(50) NOT NULL,
-    generated_phrase VARCHAR(200) NOT NULL,
-    language VARCHAR(2) DEFAULT 'es',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_favorite BOOLEAN DEFAULT FALSE
-);
-```
+-- ======================================
+-- 🚀 Script limpio para Supabase
+-- ======================================
 
-4. Haz clic en **"Save"**
+-- Crear tabla de usuarios
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  user_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Crear tabla de frases
+CREATE TABLE IF NOT EXISTS phrases (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  original_emotion TEXT NOT NULL,
+  style VARCHAR(50) NOT NULL,
+  phrase VARCHAR(200) NOT NULL,
+  language VARCHAR(2) DEFAULT 'es',
+  is_favorite BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Crear índices
+CREATE INDEX IF NOT EXISTS idx_phrases_user_id ON phrases(user_id);
+CREATE INDEX IF NOT EXISTS idx_phrases_created_at ON phrases(created_at);
+
+-- ======================================
+-- 🔐 Row Level Security
+-- ======================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE phrases ENABLE ROW LEVEL SECURITY;
+
+-- Primero limpiar políticas antiguas en users
+DROP POLICY IF EXISTS "Users can view own profile" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON users;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON users;
+
+-- Crear políticas users
+CREATE POLICY "Users can view own profile" ON users
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON users
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Enable insert for authenticated users only" ON users
+  FOR INSERT WITH CHECK (auth.uid() = id OR auth.role() = 'service_role');
+
+-- Primero limpiar políticas antiguas en phrases
+DROP POLICY IF EXISTS "Users can view own phrases" ON phrases;
+DROP POLICY IF EXISTS "Users can insert own phrases" ON phrases;
+DROP POLICY IF EXISTS "Users can update own phrases" ON phrases;
+DROP POLICY IF EXISTS "Users can delete own phrases" ON phrases;
+
+-- Crear políticas phrases
+CREATE POLICY "Users can view own phrases" ON phrases
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own phrases" ON phrases
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own phrases" ON phrases
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own phrases" ON phrases
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- ======================================
+-- 🔄 Trigger para sincronizar auth.users → users
+-- ======================================
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+-- ✅ Función segura con search_path fijo
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+SET search_path = public -- <-- Asegura que todo se ejecute en el esquema correcto
+AS $$
+BEGIN
+  INSERT INTO public.users (id, email, user_name)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'user_name');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- ======================================
+-- 🔑 Índice único para evitar duplicados de frases
+-- ======================================
+DROP INDEX IF EXISTS uniq_phrase_per_user;
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_phrase_per_user 
+ON phrases(user_id, phrase);
+```
 
 ### **Paso 5: Configurar variables de entorno**
 

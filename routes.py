@@ -19,6 +19,18 @@ def login_required(f):
             # Verificar autenticación en Supabase
             supabase = get_supabase_client()
             try:
+                # Restaurar sesión si tenemos tokens guardados
+                access_token = session.get('sb_access_token')
+                refresh_token = session.get('sb_refresh_token')
+                if access_token and refresh_token:
+                    try:
+                        if hasattr(supabase.auth, 'set_session'):
+                            supabase.auth.set_session(access_token, refresh_token)
+                        elif hasattr(supabase.auth, 'set_auth'):
+                            supabase.auth.set_auth(access_token)
+                    except:
+                        pass
+
                 user = supabase.auth.get_user()
                 if not user.user:
                     return redirect(url_for('landing'))
@@ -103,14 +115,29 @@ def login():
         print(f"Tipo de respuesta: {type(response)}")
         
         # Manejar la nueva estructura de respuesta de Supabase
-        if hasattr(response, 'data') and response.data and hasattr(response.data, 'user'):
-            user = response.data.user
-        elif hasattr(response, 'user'):
-            user = response.user
+        session_data = None
+        if hasattr(response, 'data') and response.data:
+            user = getattr(response.data, 'user', None)
+            session_data = getattr(response.data, 'session', None)
+        elif hasattr(response, 'user') or hasattr(response, 'session'):
+            user = getattr(response, 'user', None)
+            session_data = getattr(response, 'session', None)
         else:
             print(f"Estructura de respuesta inesperada: {response}")
             flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
             return redirect(url_for('landing'))
+
+        # Guardar tokens en la sesión de Flask para futuras solicitudes
+        if session_data:
+            access_token = getattr(session_data, 'access_token', None)
+            refresh_token = getattr(session_data, 'refresh_token', None)
+            if access_token is None and isinstance(session_data, dict):
+                access_token = session_data.get('access_token')
+                refresh_token = session_data.get('refresh_token')
+            if access_token:
+                session['sb_access_token'] = access_token
+            if refresh_token:
+                session['sb_refresh_token'] = refresh_token
         
         if user:
             # Verificar si el usuario existe en la tabla users
@@ -227,7 +254,13 @@ def logout():
     if USE_SUPABASE:
         try:
             supabase = get_supabase_client()
-            supabase.auth.sign_out()
+            try:
+                supabase.auth.sign_out()
+            except:
+                pass
+            # Limpiar tokens almacenados en la sesión
+            session.pop('sb_access_token', None)
+            session.pop('sb_refresh_token', None)
             flash('Has cerrado sesión correctamente.', 'info')
         except:
             pass
