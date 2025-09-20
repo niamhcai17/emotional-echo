@@ -121,30 +121,18 @@
         if (supabaseUrl && supabaseAnonKey) {
             const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
             
+            // Initialize auth manager
+            const auth = initializeAuthManager(supabase);
+            
             // Verificar autenticación al cargar la página
             async function checkAuth() {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                        // Si no está autenticado, redirigir al landing
-                        if (window.location.pathname !== '/landing') {
-                            window.location.href = '/landing';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error verificando autenticación:', error);
+                if (auth) {
+                    await auth.redirectIfNotAuthenticated();
                 }
             }
             
             // Verificar autenticación al cargar la página
             checkAuth();
-            
-            // Escuchar cambios en la autenticación
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT') {
-                    window.location.href = '/landing';
-                }
-            });
         }
     </script>
     

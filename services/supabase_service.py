@@ -20,12 +20,22 @@ class SupabaseService:
     def get_user_info(self, user_id):
         """Obtiene información del usuario desde la tabla users"""
         try:
+            print(f"🔍 Buscando usuario con ID: {user_id}")
             response = self.supabase.table('users').select('*').eq('id', user_id).execute()
+            print(f"🔍 Respuesta de Supabase: {response}")
+            print(f"🔍 Datos recibidos: {response.data}")
+            
             if response.data:
+                print(f"✅ Usuario encontrado: {response.data[0]}")
                 return response.data[0]
-            return None
+            else:
+                print("⚠️ Usuario no encontrado en la base de datos")
+                return None
         except Exception as e:
-            print(f"Error obteniendo información del usuario: {e}")
+            print(f"❌ Error obteniendo información del usuario: {e}")
+            print(f"Tipo de error: {type(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def create_user(self, user_id, email, user_name):
@@ -39,16 +49,20 @@ class SupabaseService:
                 'updated_at': datetime.utcnow().isoformat()
             }
             
-            print(f"Intentando crear usuario: {data}")
+            print(f"🔍 Intentando crear usuario: {data}")
             response = self.supabase.table('users').insert(data).execute()
+            print(f"🔍 Respuesta de Supabase al crear usuario: {response}")
+            print(f"🔍 Datos de respuesta: {response.data}")
             
             if response.data:
-                print(f"Usuario creado exitosamente: {response.data[0]}")
+                print(f"✅ Usuario creado exitosamente: {response.data[0]}")
                 return response.data[0]
-            return None
+            else:
+                print("⚠️ No se recibieron datos al crear usuario")
+                return None
             
         except Exception as e:
-            print(f"Error creando usuario: {e}")
+            print(f"❌ Error creando usuario: {e}")
             print(f"Tipo de error: {type(e)}")
             import traceback
             traceback.print_exc()

@@ -7,6 +7,26 @@ from functools import wraps
 if USE_SUPABASE:
     from services.supabase_service import supabase_service
     from config.supabase_config import get_supabase_client
+    
+    # Función para probar la conexión con Supabase
+    def test_supabase_connection():
+        """Prueba la conexión con Supabase y las tablas necesarias"""
+        try:
+            print("🔄 Probando conexión con Supabase...")
+            supabase = get_supabase_client()
+            
+            # Probar tabla users
+            response = supabase.table('users').select('*').limit(1).execute()
+            print("✅ Conexión con tabla 'users' exitosa")
+            
+            # Probar tabla phrases
+            response = supabase.table('phrases').select('*').limit(1).execute()
+            print("✅ Conexión con tabla 'phrases' exitosa")
+            
+            return True
+        except Exception as e:
+            print(f"❌ Error de conexión con Supabase: {e}")
+            return False
 else:
     from app import db
     from models import Phrase
@@ -103,6 +123,11 @@ def login():
         return redirect(url_for('landing'))
     
     try:
+        # Probar conexión con Supabase antes de proceder
+        if not test_supabase_connection():
+            flash('Error de conexión con la base de datos. Por favor, intenta más tarde.', 'error')
+            return redirect(url_for('landing'))
+        
         supabase = get_supabase_client()
         
         # Intentar iniciar sesión con email y contraseña
@@ -140,16 +165,29 @@ def login():
                 session['sb_refresh_token'] = refresh_token
         
         if user:
+            print(f"🔍 Usuario autenticado: {user.id}, email: {email}")
+            
             # Verificar si el usuario existe en la tabla users
             user_info = supabase_service.get_user_info(user.id)
+            print(f"🔍 Resultado get_user_info: {user_info}")
             
             if user_info:
+                print("✅ Usuario encontrado en la base de datos")
                 flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
                 return redirect(url_for('index'))
             else:
+                print("⚠️ Usuario no encontrado, creando nuevo usuario...")
                 # Usuario no existe en la tabla users, crear uno básico
-                supabase_service.create_user(user.id, email, email.split('@')[0])
-                flash('¡Bienvenido! Tu cuenta ha sido configurada.', 'success')
+                created_user = supabase_service.create_user(user.id, email, email.split('@')[0])
+                print(f"🔍 Resultado create_user: {created_user}")
+                
+                if created_user:
+                    print("✅ Usuario creado exitosamente")
+                    flash('¡Bienvenido! Tu cuenta ha sido configurada.', 'success')
+                else:
+                    print("❌ Error creando usuario")
+                    flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
+                
                 return redirect(url_for('index'))
         else:
             flash('Credenciales incorrectas. Por favor, verifica tu email y contraseña.', 'error')
