@@ -20,12 +20,22 @@ class SupabaseService:
     def get_user_info(self, user_id):
         """Obtiene información del usuario desde la tabla users"""
         try:
+            print(f"🔍 Buscando usuario con ID: {user_id}")
             response = self.supabase.table('users').select('*').eq('id', user_id).execute()
+            print(f"🔍 Respuesta de Supabase: {response}")
+            print(f"🔍 Datos recibidos: {response.data}")
+            
             if response.data:
+                print(f"✅ Usuario encontrado: {response.data[0]}")
                 return response.data[0]
-            return None
+            else:
+                print("⚠️ Usuario no encontrado en la base de datos")
+                return None
         except Exception as e:
-            print(f"Error obteniendo información del usuario: {e}")
+            print(f"❌ Error obteniendo información del usuario: {e}")
+            print(f"Tipo de error: {type(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def create_user(self, user_id, email, user_name):
@@ -39,16 +49,20 @@ class SupabaseService:
                 'updated_at': datetime.utcnow().isoformat()
             }
             
-            print(f"Intentando crear usuario: {data}")
+            print(f"🔍 Intentando crear usuario: {data}")
             response = self.supabase.table('users').insert(data).execute()
+            print(f"🔍 Respuesta de Supabase al crear usuario: {response}")
+            print(f"🔍 Datos de respuesta: {response.data}")
             
             if response.data:
-                print(f"Usuario creado exitosamente: {response.data[0]}")
+                print(f"✅ Usuario creado exitosamente: {response.data[0]}")
                 return response.data[0]
-            return None
+            else:
+                print("⚠️ No se recibieron datos al crear usuario")
+                return None
             
         except Exception as e:
-            print(f"Error creando usuario: {e}")
+            print(f"❌ Error creando usuario: {e}")
             print(f"Tipo de error: {type(e)}")
             import traceback
             traceback.print_exc()
@@ -237,6 +251,17 @@ class SupabaseService:
                 'style_stats': {},
                 'emotion_length_stats': {'short': 0, 'medium': 0, 'long': 0}
             }
+
+    def get_phrase_count(self, user_id):
+        """Cuenta el número de frases creadas por un usuario"""
+        try:
+            # count='exact', head=True solo devuelve el conteo sin los datos
+            response = self.supabase.table('phrases').select('*', count='exact', head=True).eq('user_id', user_id).execute()
+            print(f"🔍 Conteo de frases para {user_id}: {response.count}")
+            return response.count if response.count is not None else 0
+        except Exception as e:
+            print(f"Error contando frases: {e}")
+            return 0
 
 # Instancia global del servicio
 supabase_service = SupabaseService() 

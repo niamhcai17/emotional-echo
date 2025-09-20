@@ -1,3 +1,259 @@
+// Auth utility functions
+class AuthManager {
+    constructor(supabaseClient) {
+        this.supabase = supabaseClient;
+        this.isCheckingAuth = false;
+        this.authCheckPromise = null;
+        this.retryCount = 0;
+        this.maxRetries = 3;
+    }
+
+    async checkSession() {
+        if (this.isCheckingAuth && this.authCheckPromise) {
+            return this.authCheckPromise; // Return existing promise if check is in progress
+        }
+        
+        this.isCheckingAuth = true;
+        
+        this.authCheckPromise = this._performSessionCheck();
+        
+        try {
+            const result = await this.authCheckPromise;
+            this.retryCount = 0; // Reset retry count on success
+            return result;
+        } finally {
+            this.isCheckingAuth = false;
+            this.authCheckPromise = null;
+        }
+    }
+
+    async _performSessionCheck() {
+        try {
+            const { data: { session }, error } = await this.supabase.auth.getSession();
+            
+            if (error) {
+                console.error('Error obteniendo sesión:', error);
+                
+                // Retry logic for network errors
+                if (this.retryCount < this.maxRetries && this._isRetryableError(error)) {
+                    this.retryCount++;
+                    console.log(`Reintentando verificación de sesión (${this.retryCount}/${this.maxRetries})...`);
+                    await this._delay(1000 * this.retryCount); // Exponential backoff
+                    return this._performSessionCheck();
+                }
+                
+                return { session: null, error };
+            }
+            
+            return { session, error: null };
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+            
+            // Retry logic for network errors
+            if (this.retryCount < this.maxRetries && this._isRetryableError(error)) {
+                this.retryCount++;
+                console.log(`Reintentando verificación de sesión (${this.retryCount}/${this.maxRetries})...`);
+                await this._delay(1000 * this.retryCount); // Exponential backoff
+                return this._performSessionCheck();
+            }
+            
+            return { session: null, error };
+        }
+    }
+
+    _isRetryableError(error) {
+        // Check if error is retryable (network issues, timeouts, etc.)
+        const retryableMessages = ['network', 'timeout', 'fetch', 'connection'];
+        const errorMessage = error.message?.toLowerCase() || '';
+        return retryableMessages.some(msg => errorMessage.includes(msg));
+    }
+
+    _delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async isAuthenticated() {
+        const { session } = await this.checkSession();
+        return !!session;
+    }
+
+    async getCurrentUser() {
+        const { session } = await this.checkSession();
+        return session ? session.user : null;
+    }
+
+    async redirectIfNotAuthenticated(redirectTo = '/landing') {
+        try {
+            const { session, error } = await this.checkSession();
+            
+            if (error) {
+                console.warn('Error verificando autenticación, permitiendo acceso:', error);
+                return false; // Don't redirect on error, allow user to see the page
+            }
+            
+            if (!session && window.location.pathname !== redirectTo) {
+                console.log('Usuario no autenticado, redirigiendo a:', redirectTo);
+                this._showLoadingState('Verificando autenticación...');
+                window.location.href = redirectTo;
+                return false;
+            }
+            return !!session;
+        } catch (error) {
+            console.error('Error en redirectIfNotAuthenticated:', error);
+            return false; // Don't redirect on error
+        }
+    }
+
+    async redirectIfAuthenticated(redirectTo = '/') {
+        try {
+            const { session, error } = await this.checkSession();
+            
+            if (error) {
+                console.warn('Error verificando autenticación, permitiendo acceso:', error);
+                return false; // Don't redirect on error, allow user to see the page
+            }
+            
+            if (session && window.location.pathname !== redirectTo) {
+                console.log('Usuario ya autenticado, redirigiendo a:', redirectTo);
+                this._showLoadingState('Redirigiendo...');
+                window.location.href = redirectTo;
+                return true;
+            }
+            return !!session;
+        } catch (error) {
+            console.error('Error en redirectIfAuthenticated:', error);
+            return false; // Don't redirect on error
+        }
+    }
+
+    _showLoadingState(message = 'Cargando...') {
+        // Create or update loading indicator
+        let loadingIndicator = document.getElementById('auth-loading');
+        if (!loadingIndicator) {
+            loadingIndicator = document.createElement('div');
+            loadingIndicator.id = 'auth-loading';
+            loadingIndicator.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+            loadingIndicator.style.cssText = 'background: rgba(255,255,255,0.9); z-index: 9999;';
+            loadingIndicator.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="text-muted">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(loadingIndicator);
+        } else {
+            loadingIndicator.querySelector('p').textContent = message;
+        }
+    }
+
+    _hideLoadingState() {
+        const loadingIndicator = document.getElementById('auth-loading');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+    }
+
+    updateUserInterface(user) {
+        const navUserName = document.getElementById('navUserName');
+        if (navUserName && user && user.user_metadata && user.user_metadata.username) {
+            navUserName.textContent = user.user_metadata.username;
+        } else if (navUserName) {
+            navUserName.textContent = 'Mi Perfil';
+        }
+    }
+
+    setupAuthStateListener() {
+        this.supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+            
+            // Hide loading state when auth state changes
+            this._hideLoadingState();
+            
+            if (event === 'SIGNED_OUT' || !session) {
+                this.updateUserInterface(null);
+                if (window.location.pathname !== '/landing') {
+                    this._showLoadingState('Cerrando sesión...');
+                    window.location.href = '/landing';
+                }
+            } else if (event === 'SIGNED_IN' && session) {
+                this.updateUserInterface(session.user);
+                this._hideLoadingState();
+            } else if (event === 'TOKEN_REFRESHED' && session) {
+                // Update UI when token is refreshed
+                this.updateUserInterface(session.user);
+            }
+        });
+    }
+}
+
+// Global auth manager instance (will be initialized when Supabase is available)
+let authManager = null;
+
+// Initialize auth manager when Supabase is available
+function initializeAuthManager(supabaseClient) {
+    if (!authManager && supabaseClient) {
+        authManager = new AuthManager(supabaseClient);
+        authManager.setupAuthStateListener();
+        
+        // Add global error handler for auth errors
+        window.addEventListener('unhandledrejection', (event) => {
+            if (event.reason && event.reason.message && 
+                event.reason.message.includes('auth')) {
+                console.error('Unhandled auth error:', event.reason);
+                authManager._hideLoadingState();
+            }
+        });
+    }
+    return authManager;
+}
+
+// Utility function to check if user is authenticated (can be used anywhere)
+async function isUserAuthenticated() {
+    if (authManager) {
+        return await authManager.isAuthenticated();
+    }
+    return false;
+}
+
+// Utility function to get current user (can be used anywhere)
+async function getCurrentUser() {
+    if (authManager) {
+        return await authManager.getCurrentUser();
+    }
+    return null;
+}
+
+/*
+ * USAGE EXAMPLES:
+ * 
+ * // Check if user is authenticated
+ * const isAuth = await isUserAuthenticated();
+ * 
+ * // Get current user data
+ * const user = await getCurrentUser();
+ * if (user) {
+ *     console.log('User:', user.email);
+ * }
+ * 
+ * // Check session manually
+ * if (authManager) {
+ *     const { session, error } = await authManager.checkSession();
+ *     if (session) {
+ *         console.log('Active session:', session);
+ *     }
+ * }
+ * 
+ * // The auth manager automatically handles:
+ * - Session checking on page load
+ * - Redirecting unauthenticated users to /landing
+ * - Redirecting authenticated users away from /landing
+ * - Updating UI when auth state changes
+ * - Retry logic for network errors
+ * - Loading states during auth operations
+ */
+
 // Character counter for emotion input
 document.addEventListener('DOMContentLoaded', function() {
     const emotionInput = document.getElementById('emotion');

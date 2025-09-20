@@ -252,12 +252,13 @@
             document.getElementById('loginForm').style.display = 'none';
         });
 
+        // Initialize auth manager and check authentication
+        const auth = initializeAuthManager(supabaseClient);
+        
         // Verificar si ya está autenticado
         async function checkAuth() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) {
-                // Si ya está autenticado, redirigir a la página principal
-                window.location.href = '/';
+            if (auth) {
+                await auth.redirectIfAuthenticated();
             }
         }
 

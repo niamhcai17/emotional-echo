@@ -17,18 +17,13 @@
                     <div class="mb-4">
                         <label for="emotion" class="form-label" id="emotionLabel">
                             {% if user_name %}
-                                Hola, {{ user_name }} ¿Cómo te sientes?
+                            Hola, {{ user_name }} ¿Cómo te sientes?
                             {% else %}
-                                ¿Cómo te sientes?
+                            ¿Cómo te sientes?
                             {% endif %}
                         </label>
-                        <textarea 
-                            class="form-control emotion-input" 
-                            id="emotion" 
-                            name="emotion" 
-                            rows="4" 
-                            placeholder="Describe lo que sientes en este momento..."
-                            maxlength="500"
+                        <textarea class="form-control emotion-input" id="emotion" name="emotion" rows="4"
+                            placeholder="Describe lo que sientes en este momento..." maxlength="500"
                             required>{{ original_emotion or '' }}</textarea>
                         <div class="form-text">
                             <span id="charCount">0</span>/500 caracteres
@@ -38,16 +33,17 @@
                     <div class="mb-4">
                         <label for="style" class="form-label">Elige tu estilo</label>
                         <select class="form-select style-select" id="style" name="style" required>
-                            <option value="poetica_minimalista" {{ 'selected' if style == 'poetica_minimalista' else '' }}>
+                            <option value="poetica_minimalista" {{ 'selected' if style=='poetica_minimalista' else ''
+                                }}>
                                 <i class="fas fa-leaf"></i> Poética minimalista
                             </option>
-                            <option value="indirecta_redes" {{ 'selected' if style == 'indirecta_redes' else '' }}>
+                            <option value="indirecta_redes" {{ 'selected' if style=='indirecta_redes' else '' }}>
                                 <i class="fas fa-share-alt"></i> Indirecta para redes
                             </option>
-                            <option value="diario_intimo" {{ 'selected' if style == 'diario_intimo' else '' }}>
+                            <option value="diario_intimo" {{ 'selected' if style=='diario_intimo' else '' }}>
                                 <i class="fas fa-book-open"></i> Diario íntimo
                             </option>
-                            <option value="reflexiva" {{ 'selected' if style == 'reflexiva' else '' }}>
+                            <option value="reflexiva" {{ 'selected' if style=='reflexiva' else '' }}>
                                 <i class="fas fa-brain"></i> Reflexiva
                             </option>
                         </select>
@@ -69,14 +65,14 @@
                         "{{ generated_phrase }}"
                     </div>
                     <div class="phrase-actions mt-4">
-                        <button class="btn btn-outline-primary" onclick="copyToClipboard('{{ generated_phrase }}')">
+                        <button class="btn btn-outline-dark" onclick="copyToClipboard('{{ generated_phrase }}')">
                             <i class="fas fa-copy me-2"></i>Copiar
                         </button>
-                        <button class="btn btn-outline-success" onclick="sharePhrase('{{ generated_phrase }}')">
+                        <button class="btn btn-outline-dark" onclick="sharePhrase('{{ generated_phrase }}')">
                             <i class="fas fa-share me-2"></i>Compartir
                         </button>
-                        <button class="btn btn-outline-danger" onclick="toggleFavorite({{ phrase_id }})" id="favoriteBtn">
-                            <i class="fas fa-heart me-2"></i>Guardar
+                        <button class="btn btn-outline-dark" onclick="toggleFavorite({{ phrase_id }})" id="favoriteBtn">
+                            <i class="far fa-heart me-2"></i>Guardar
                         </button>
                     </div>
                 </div>
@@ -116,121 +112,148 @@
         </div>
     </div>
 </div>
+</div>
+</div>
+
+<!-- Limit Reached Overlay -->
+{% if limit_reached %}
+<div class="limit-overlay show">
+    <div class="limit-content text-center">
+        <!-- Reusing the pencil animation structure from loader -->
+        <div class="pencil-container">
+            <div class="pencil"></div>
+            <div class="writing-line"></div>
+        </div>
+
+        <h2 class="handwritten-text">
+            Thanks for trying Entrelíneas.<br>
+            Updates coming soon.
+        </h2>
+
+        <div class="limit-actions">
+            <a href="{{ url_for('collection') }}" class="btn btn-outline-dark">
+                <i class="fas fa-book me-2"></i>Ver mi colección
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Contador de caracteres
-document.getElementById('emotion').addEventListener('input', function() {
-    const charCount = this.value.length;
-    document.getElementById('charCount').textContent = charCount;
-    
-    // Cambiar color según la longitud
-    const charCountElement = document.getElementById('charCount');
-    if (charCount > 400) {
-        charCountElement.style.color = '#dc3545';
-    } else if (charCount > 300) {
-        charCountElement.style.color = '#ffc107';
-    } else {
-        charCountElement.style.color = '#6c757d';
-    }
-});
+    // Contador de caracteres
+    document.getElementById('emotion').addEventListener('input', function () {
+        const charCount = this.value.length;
+        document.getElementById('charCount').textContent = charCount;
 
-// Función para copiar al portapapeles
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        // Mostrar notificación de éxito
-        const btn = event.target;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check me-2"></i>Copiado!';
-        btn.classList.remove('btn-outline-primary');
-        btn.classList.add('btn-success');
-        
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-outline-primary');
-        }, 2000);
-    }).catch(function(err) {
-        console.error('Error al copiar: ', err);
-        alert('Error al copiar al portapapeles');
-    });
-}
-
-// Función para compartir
-function sharePhrase(text) {
-    if (navigator.share) {
-        navigator.share({
-            title: 'Mi frase poética - Entrelíneas',
-            text: text,
-            url: window.location.href
-        });
-    } else {
-        // Fallback para navegadores que no soportan Web Share API
-        copyToClipboard(text);
-        alert('Frase copiada al portapapeles. ¡Compártela donde quieras!');
-    }
-}
-
-// Función para toggle de favoritos
-function toggleFavorite(phraseId) {
-    fetch(`/favorite/${phraseId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const btn = document.getElementById('favoriteBtn');
-            if (data.is_favorite) {
-                btn.innerHTML = '<i class="fas fa-heart me-2"></i>Guardado';
-                btn.classList.remove('btn-outline-danger');
-                btn.classList.add('btn-danger');
-            } else {
-                btn.innerHTML = '<i class="fas fa-heart me-2"></i>Guardar';
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-outline-danger');
-            }
+        // Cambiar color según la longitud
+        const charCountElement = document.getElementById('charCount');
+        if (charCount > 400) {
+            charCountElement.style.color = '#dc3545';
+        } else if (charCount > 300) {
+            charCountElement.style.color = '#ffc107';
         } else {
-            console.error('Error:', data.error);
+            charCountElement.style.color = '#6c757d';
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
     });
-}
 
-// Control del loader personalizado
-document.getElementById('generateForm').addEventListener('submit', function(e) {
-    // Validar que el formulario tenga contenido
-    const emotion = document.getElementById('emotion').value.trim();
-    if (!emotion) {
-        e.preventDefault();
-        alert('Por favor, describe cómo te sientes antes de continuar.');
-        return;
-    }
-    
-    // Mostrar loader
-    if (window.showLoader) {
-        window.showLoader();
-    }
-    
-    // Deshabilitar el botón para evitar múltiples envíos
-    const submitBtn = document.getElementById('generateBtn');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
-    
-    // El formulario se enviará normalmente
-    // El loader se ocultará cuando la página se recargue con el resultado
-});
+    // Función para copiar al portapapeles
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function () {
+            // Mostrar notificación de éxito
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Copiado!';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
 
-// Si hay una frase generada, ocultar el loader
-{% if generated_phrase %}
-if (window.hideLoader) {
-    window.hideLoader();
-}
-{% endif %}
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        }).catch(function (err) {
+            console.error('Error al copiar: ', err);
+            alert('Error al copiar al portapapeles');
+        });
+    }
+
+    // Función para compartir
+    function sharePhrase(text) {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Mi frase poética - Entrelíneas',
+                text: text,
+                url: window.location.href
+            });
+        } else {
+            // Fallback para navegadores que no soportan Web Share API
+            copyToClipboard(text);
+            alert('Frase copiada al portapapeles. ¡Compártela donde quieras!');
+        }
+    }
+
+    // Función para toggle de favoritos
+    function toggleFavorite(phraseId) {
+        fetch(`/favorite/${phraseId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const btn = document.getElementById('favoriteBtn');
+                    if (data.is_favorite) {
+                        btn.innerHTML = '<i class="fas fa-heart me-2"></i>Guardado';
+                        btn.classList.remove('btn-outline-dark');
+                        btn.classList.add('btn-dark');
+                    } else {
+                        btn.innerHTML = '<i class="far fa-heart me-2"></i>Guardar';
+                        btn.classList.remove('btn-dark');
+                        btn.classList.add('btn-outline-dark');
+                    }
+                } else {
+                    console.error('Error:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    // Control del loader personalizado
+    document.getElementById('generateForm').addEventListener('submit', function (e) {
+        // Validar que el formulario tenga contenido
+        const emotion = document.getElementById('emotion').value.trim();
+        if (!emotion) {
+            e.preventDefault();
+            alert('Por favor, describe cómo te sientes antes de continuar.');
+            return;
+        }
+
+        // Mostrar loader
+        if (window.showLoader) {
+            window.showLoader();
+        }
+
+        // Deshabilitar el botón para evitar múltiples envíos
+        const submitBtn = document.getElementById('generateBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
+
+        // El formulario se enviará normalmente
+        // El loader se ocultará cuando la página se recargue con el resultado
+    });
+
+    // Si hay una frase generada, ocultar el loader
+    {% if generated_phrase %}
+    if (window.hideLoader) {
+        window.hideLoader();
+    }
+    {% endif %}
 </script>
 {% endblock %}

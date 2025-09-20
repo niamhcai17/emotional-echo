@@ -1,25 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Entrelíneas{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+Pro:wght@300;400;600&family=Dancing+Script:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+
     <!-- Loader CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
@@ -39,34 +43,35 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('collection') }}">
-                            <i class="fas fa-book me-1"></i>Mi Colección
+                            <i class="fas fa-book-open me-1"></i>Mi Colección
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('favorites') }}">
-                            <i class="fas fa-heart me-1"></i>Favoritos
+                            <i class="far fa-heart me-1"></i>Favoritos
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('stats') }}">
-                            <i class="fas fa-chart-bar me-1"></i>Estadísticas
+                            <i class="fas fa-chart-line me-1"></i>Estadísticas
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                            data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i>
                             <span id="navUserName">
                                 {% if user_name %}
-                                    {{ user_name }}
+                                {{ user_name }}
                                 {% else %}
-                                    Mi Perfil
+                                Mi Perfil
                                 {% endif %}
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                            </a></li>
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -78,16 +83,17 @@
     <main class="main-content">
         <div class="container">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show"
+                role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
-            
+
             {% block content %}{% endblock %}
         </div>
     </main>
@@ -104,50 +110,39 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+
     <!-- Loader JS -->
     <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
-    
+
     <!-- Supabase Auth Script -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
         // Configuración de Supabase
         const supabaseUrl = '{{ config.SUPABASE_URL }}';
         const supabaseAnonKey = '{{ config.SUPABASE_ANON_KEY }}';
-        
+
         if (supabaseUrl && supabaseAnonKey) {
             const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
-            
+
+            // Initialize auth manager
+            const auth = initializeAuthManager(supabase);
+
             // Verificar autenticación al cargar la página
             async function checkAuth() {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                        // Si no está autenticado, redirigir al landing
-                        if (window.location.pathname !== '/landing') {
-                            window.location.href = '/landing';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error verificando autenticación:', error);
+                if (auth) {
+                    await auth.redirectIfNotAuthenticated();
                 }
             }
-            
+
             // Verificar autenticación al cargar la página
             checkAuth();
-            
-            // Escuchar cambios en la autenticación
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT') {
-                    window.location.href = '/landing';
-                }
-            });
         }
     </script>
-    
+
     {% block scripts %}{% endblock %}
 </body>
+
 </html>
