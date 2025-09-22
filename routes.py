@@ -48,14 +48,25 @@ def login_required(f):
                             supabase.auth.set_session(access_token, refresh_token)
                         elif hasattr(supabase.auth, 'set_auth'):
                             supabase.auth.set_auth(access_token)
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"Error restaurando sesión: {e}")
+                        # Si falla la restauración, limpiar tokens y redirigir
+                        session.pop('sb_access_token', None)
+                        session.pop('sb_refresh_token', None)
+                        return redirect(url_for('landing'))
 
                 user = supabase.auth.get_user()
-                if not user.user:
+                if not user or not user.user:
+                    print("❌ Usuario no encontrado en el decorador")
+                    # Si no hay usuario después de intentar restaurar la sesión, limpiar tokens
+                    session.pop('sb_access_token', None)
+                    session.pop('sb_refresh_token', None)
                     return redirect(url_for('landing'))
+                
+                print(f"✅ Usuario autenticado en decorador: {user.user.id}")
                 return f(*args, **kwargs)
-            except:
+            except Exception as e:
+                print(f"❌ Error en decorador login_required: {e}")
                 return redirect(url_for('landing'))
         else:
             # Verificar nombre de usuario en cookies (modo legacy)
@@ -79,9 +90,9 @@ def index():
                 user_info = supabase_service.get_user_info(user.user.id)
                 user_name = user_info.get('full_name', 'Usuario') if user_info else 'Usuario'
                 return render_template('index.html', user_name=user_name, user_id=user.user.id)
-        except:
-            pass
-        return redirect(url_for('landing'))
+        except Exception as e:
+            print(f"❌ Error en la función index: {e}")
+            return redirect(url_for('landing'))
     else:
         # Modo legacy con cookies
         user_name = request.cookies.get('user_name', '')
@@ -135,7 +146,7 @@ def login():
             'email': email,
             'password': password
         })
-        
+
         print(f"Respuesta de login: {response}")
         print(f"Tipo de respuesta: {type(response)}")
         
@@ -164,7 +175,7 @@ def login():
             if refresh_token:
                 session['sb_refresh_token'] = refresh_token
         
-        if user:
+        if user and hasattr(user, 'id'):
             print(f"🔍 Usuario autenticado: {user.id}, email: {email}")
             
             # Verificar si el usuario existe en la tabla users
@@ -186,7 +197,7 @@ def login():
                     flash('¡Bienvenido! Tu cuenta ha sido configurada.', 'success')
                 else:
                     print("❌ Error creando usuario")
-                    flash('¡Bienvenido! Has iniciado sesión correctamente.', 'success')
+                    flash('Que pena! Has iniciado sesión correctamente.', 'success')
                 
                 return redirect(url_for('index'))
         else:
@@ -352,7 +363,7 @@ def generate_phrase():
                 user_id=user_id,
                 original_emotion=emotion,
                 style=style,
-                generated_phrase=generated_phrase,
+                phrase=generated_phrase,
                 language=language
             )
             phrase_id = phrase['id'] if phrase else None
