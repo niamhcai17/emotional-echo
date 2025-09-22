@@ -401,7 +401,7 @@ def generate_phrase():
         flash('Error inesperado. Por favor, inténtalo más tarde.', 'error')
         return redirect(url_for('index'))
 
-@app.route('/favorite/<int:phrase_id>', methods=['POST'])
+@app.route('/favorite/<phrase_id>', methods=['POST'])
 @login_required
 def toggle_favorite(phrase_id):
     """Toggle favorite status of a phrase"""
@@ -561,7 +561,7 @@ def stats():
         flash('Error al cargar las estadísticas.', 'error')
         return redirect(url_for('index'))
 
-@app.route('/delete/<int:phrase_id>', methods=['POST'])
+@app.route('/delete/<phrase_id>', methods=['POST'])
 @login_required
 def delete_phrase(phrase_id):
     """Delete a phrase from collection"""
@@ -603,7 +603,7 @@ def delete_phrase(phrase_id):
         flash('Error al eliminar la frase.', 'error')
         return redirect(url_for('collection'))
 
-@app.route('/api/phrase/<int:phrase_id>')
+@app.route('/api/phrase/<phrase_id>')
 @login_required
 def get_phrase_api(phrase_id):
     """API endpoint to get phrase data"""

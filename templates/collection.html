@@ -108,11 +108,11 @@
                                     <i class="fas fa-share"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-{{ 'danger' if phrase.is_favorite else 'secondary' }}" 
-                                        onclick="toggleFavorite({{ phrase.id }})" 
+                                        onclick="toggleFavorite('{{ phrase.id }}')" 
                                         id="favoriteBtn{{ phrase.id }}">
                                     <i class="fas fa-heart"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase({{ phrase.id }})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase('{{ phrase.id }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
