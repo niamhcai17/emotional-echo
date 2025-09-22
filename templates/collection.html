@@ -112,7 +112,9 @@
                                         id="favoriteBtn{{ phrase.id }}">
                                     <i class="fas fa-heart"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase('{{ phrase.id }}')">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="deletePhrase('{{ phrase.id }}')"
+                                        id="deleteBtn{{ phrase.id }}">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>

@@ -331,14 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 
-    // Delete confirmation
-    window.deletePhrase = function(phraseId) {
-        const deleteFormElement = document.getElementById('deleteForm');
-        if (deleteFormElement) {
-            deleteFormElement.action = `/delete/${phraseId}`;
-            deleteModal.show();
-        }
-    };
+    // Delete confirmation is now handled by the global deletePhrase function
 });
 
 // Copy to clipboard functionality
@@ -401,6 +394,41 @@ function toggleFavorite(phraseId) {
         showToast('Error al actualizar favoritos', 'error');
     });
 }
+
+// Delete phrase with confirmation modal
+function deletePhrase(phraseId) {
+    const deleteFormElement = document.getElementById('deleteForm');
+    const deleteModal = document.getElementById('deleteModal');
+    
+    if (deleteFormElement && deleteModal) {
+        // Set the form action to the correct delete URL
+        deleteFormElement.action = `/delete/${phraseId}`;
+        // Show the confirmation modal
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+        
+        // Add animation to the phrase card for visual feedback
+        const phraseCard = document.querySelector(`[data-phrase-id="${phraseId}"]`);
+        if (phraseCard) {
+            phraseCard.style.transition = 'all 0.3s ease';
+            phraseCard.style.transform = 'scale(0.98)';
+            phraseCard.style.opacity = '0.7';
+            
+            // Reset animation when modal is hidden without deleting
+            deleteModal.addEventListener('hidden.bs.modal', function resetAnimation() {
+                if (phraseCard) {
+                    phraseCard.style.transform = 'scale(1)';
+                    phraseCard.style.opacity = '1';
+                }
+                deleteModal.removeEventListener('hidden.bs.modal', resetAnimation);
+            });
+        }
+    } else {
+        console.error('Delete modal or form not found');
+        showToast('Error: No se pudo mostrar el diálogo de confirmación', 'error');
+    }
+}
+
 
 // Show toast notification
 function showToast(message, type = 'info') {
