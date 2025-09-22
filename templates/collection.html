@@ -116,7 +116,9 @@
                                         id="favoriteBtn{{ phrase.id }}">
                                     <i class="fas fa-heart"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase('{{ phrase.id }}')">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        onclick="deletePhrase('{{ phrase.id }}')"
+                                        id="deleteBtn{{ phrase.id }}">
                                     <i class="fas fa-trash"></i>
                                 </button>
 >>>>>>> 14efe72 (fix: phrase id in collection.html transformed to string and then sent to routes.py.)
