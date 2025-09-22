@@ -75,6 +75,7 @@
                             <div class="phrase-text">
                                 "{{ phrase.generated_phrase }}"
                             </div>
+<<<<<<< HEAD
                             <div class="phrase-meta">
                                 <small class="text-muted">
                                     <i class="fas fa-clock me-1"></i>
@@ -102,6 +103,23 @@
                                     ES
                                     {% endif %}
                                 </span>
+=======
+                            <div class="phrase-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ phrase.generated_phrase }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="sharePhrase('{{ phrase.generated_phrase }}')">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-{{ 'danger' if phrase.is_favorite else 'secondary' }}" 
+                                        onclick="toggleFavorite('{{ phrase.id }}')" 
+                                        id="favoriteBtn{{ phrase.id }}">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletePhrase('{{ phrase.id }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+>>>>>>> 14efe72 (fix: phrase id in collection.html transformed to string and then sent to routes.py.)
                             </div>
                         </div>
                         <div class="phrase-actions">
