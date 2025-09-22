@@ -90,7 +90,7 @@ class SupabaseService:
                 'user_id': user_id,
                 'original_emotion': original_emotion,
                 'style': style,
-                'phrase': phrase,
+                'generated_phrase': phrase,
                 'language': language,
                 'created_at': datetime.utcnow().isoformat(),
                 'is_favorite': False
