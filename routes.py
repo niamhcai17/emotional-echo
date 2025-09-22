@@ -268,7 +268,7 @@ def register():
             if user_created:
                 flash('¡Cuenta creada exitosamente! Por favor, verifica tu email para confirmar tu cuenta.', 'success')
             else:
-                flash('Cuenta creada pero hubo un problema al guardar tu información. Por favor, contacta soporte.', 'warning')
+                flash('Cuenta creada pero tienes que confirmar tu cuenta. Revisa tu correo electrónico.', 'warning')
             
             return redirect(url_for('landing'))
         else:
@@ -409,7 +409,7 @@ def toggle_favorite(phrase_id):
         supabase = get_supabase_client()
         user = supabase.auth.get_user()
         user_id = user.user.id if user.user else None
-        
+
         if not user_id:
             return jsonify({'success': False, 'error': 'No autorizado'})
         
