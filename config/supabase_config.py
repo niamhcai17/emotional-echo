@@ -14,14 +14,19 @@ load_dotenv()
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
+supabase = None
+
 def get_supabase_client() -> Client:
     """Crea y retorna el cliente de Supabase"""
+    global supabase
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise ValueError("SUPABASE_URL y SUPABASE_KEY deben estar configurados")
     
     try:
         # Intentar crear cliente con configuración estándar
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
+        if supabase is None:
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        return supabase
     except Exception as e:
         print(f"Error con configuración estándar: {e}")
         # Si falla, intentar con configuración SSL deshabilitada
