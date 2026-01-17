@@ -330,11 +330,11 @@ def generate_phrase():
     style = request.form.get('style', 'poetica_minimalista')
     
     if not emotion:
-        flash('Por favor, describe cómo te sientes.', 'error')
+        flash('What do you want to search today?', 'error')
         return redirect(url_for('index'))
     
     if len(emotion) > 500:
-        flash('La descripción es demasiado larga. Máximo 500 caracteres.', 'error')
+        flash('Description exceeds 500 characters.', 'error')
         return redirect(url_for('index'))
     
     try:
@@ -343,7 +343,7 @@ def generate_phrase():
         
         # Check if phrase generation failed
         if result[0] is None:
-            flash('No se pudo generar tu frase en este momento. Por favor, verifica tu clave de API de OpenAI o inténtalo más tarde. Es posible que hayas excedido tu cuota.', 'error')
+            flash('Unable to generate your phrase right now. Try again later.', 'error')
             return redirect(url_for('index'))
         
         generated_phrase, language = result
@@ -356,8 +356,23 @@ def generate_phrase():
             user_id = user.user.id if user.user else None
             
             if not user_id:
-                flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+                flash('Authentication failed. Please log in again.', 'error')
                 return redirect(url_for('landing'))
+            
+            # Verificar límite de frases (Free Pass: 3 frases)
+            phrase_count = supabase_service.get_phrase_count(user_id)
+            if phrase_count >= 3:
+                print(f"⚠️ Usuario {user_id} ha alcanzado el límite de frases ({phrase_count})")
+                
+                # Obtener nombre de usuario para mostrar en el template
+                user_info = supabase_service.get_user_info(user_id)
+                user_name = user_info.get('full_name', 'Usuario') if user_info else 'Usuario'
+                
+                return render_template('index.html', 
+                                     user_name=user_name,
+                                     limit_reached=True,
+                                     original_emotion=emotion,
+                                     style=style)
             
             phrase = supabase_service.create_phrase(
                 user_id=user_id,
@@ -371,8 +386,18 @@ def generate_phrase():
             # Modo legacy
             user_name = request.cookies.get('user_name', '').strip()
             if not user_name:
-                flash('No se encontró tu nombre. Por favor, vuelve a ingresar tu nombre.', 'error')
+                flash('Name not found. Please re-enter your name.', 'error')
                 return redirect(url_for('landing'))
+            
+            # Verificar límite de frases (Free Pass: 3 frases) - Modo Legacy
+            phrase_count = Phrase.query.filter_by(user_name=user_name).count()
+            if phrase_count >= 3:
+                print(f"⚠️ Usuario Legacy {user_name} ha alcanzado el límite de frases ({phrase_count})")
+                return render_template('index.html', 
+                                     user_name=user_name, 
+                                     limit_reached=True,
+                                     original_emotion=emotion,
+                                     style=style)
             
             phrase = Phrase(
                 user_name=user_name,
@@ -393,12 +418,12 @@ def generate_phrase():
                                 style=style,
                                 phrase_id=phrase_id)
         else:
-            flash('Error al guardar la frase. Por favor, inténtalo de nuevo.', 'error')
+            flash('Failed to save your phrase. Try again.', 'error')
             return redirect(url_for('index'))
             
     except Exception as e:
         print(f"Error generando frase: {e}")
-        flash('Error inesperado. Por favor, inténtalo más tarde.', 'error')
+        flash('Something unexpected happened. Please try again later.', 'error')
         return redirect(url_for('index'))
 
 @app.route('/favorite/<phrase_id>', methods=['POST'])
@@ -444,7 +469,7 @@ def collection():
         user_id = user.user.id if user.user else None
         
         if not user_id:
-            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            flash('Authentication failed. Please log in again.', 'error')
             return redirect(url_for('landing'))
         
         if USE_SUPABASE:
@@ -470,7 +495,7 @@ def favorites():
         user_id = user.user.id if user.user else None
         
         if not user_id:
-            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            flash('Authentication failed. Please log in again.', 'error')
             return redirect(url_for('landing'))
         
         if USE_SUPABASE:
@@ -500,7 +525,7 @@ def collection_by_language(language):
         user_id = user.user.id if user.user else None
         
         if not user_id:
-            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            flash('Authentication failed. Please log in again.', 'error')
             return redirect(url_for('landing'))
         
         if USE_SUPABASE:
@@ -527,7 +552,7 @@ def stats():
         user_id = user.user.id if user.user else None
         
         if not user_id:
-            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            flash('Authentication failed. Please log in again.', 'error')
             return redirect(url_for('landing'))
         
         if USE_SUPABASE:
@@ -571,7 +596,7 @@ def delete_phrase(phrase_id):
         user_id = user.user.id if user.user else None
         
         if not user_id:
-            flash('Error de autenticación. Por favor, inicia sesión de nuevo.', 'error')
+            flash('Authentication failed. Please log in again.', 'error')
             return redirect(url_for('landing'))
         
         if USE_SUPABASE:

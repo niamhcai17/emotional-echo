@@ -252,5 +252,16 @@ class SupabaseService:
                 'emotion_length_stats': {'short': 0, 'medium': 0, 'long': 0}
             }
 
+    def get_phrase_count(self, user_id):
+        """Cuenta el número de frases creadas por un usuario"""
+        try:
+            # count='exact', head=True solo devuelve el conteo sin los datos
+            response = self.supabase.table('phrases').select('*', count='exact', head=True).eq('user_id', user_id).execute()
+            print(f"🔍 Conteo de frases para {user_id}: {response.count}")
+            return response.count if response.count is not None else 0
+        except Exception as e:
+            print(f"Error contando frases: {e}")
+            return 0
+
 # Instancia global del servicio
 supabase_service = SupabaseService() 

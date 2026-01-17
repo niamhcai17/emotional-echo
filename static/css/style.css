@@ -633,3 +633,54 @@ h1, h2, h3, h4, h5, h6 {
         transform: translateY(0);
     }
 }
+
+/* Limit Overlay - Pantalla de límite de frases */
+.limit-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 249, 249, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.5s ease-in-out;
+}
+
+.limit-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.handwritten-text {
+    font-family: 'Dancing Script', cursive;
+    font-size: 2.5rem;
+    color: #000;
+    text-align: center;
+    max-width: 80%;
+    line-height: 1.4;
+    margin-top: 2rem;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out 0.5s forwards;
+}
+
+.limit-actions {
+    margin-top: 3rem;
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out 1s forwards;
+}
+
+/* Reusing pencil animations from loader.css but ensuring visibility */
+.limit-overlay .pencil-container {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}

@@ -72,19 +72,22 @@ def create_tables_supabase():
     
     # SQL para crear las tablas según el nuevo esquema
     create_tables_sql = """
-    -- Crear tabla de usuarios
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    -- ======================================
+    -- 🚀 Script limpio para Supabase (Definitivo)
+    -- ======================================
+
+    -- 1. Crear Tablas (Schema public explícito)
+    CREATE TABLE IF NOT EXISTS public.users (
+      id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
       email TEXT UNIQUE NOT NULL,
       user_name TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
-    -- Crear tabla de frases
-    CREATE TABLE IF NOT EXISTS phrases (
+    CREATE TABLE IF NOT EXISTS public.phrases (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-      user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+      user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
       original_emotion TEXT NOT NULL,
       style VARCHAR(50) NOT NULL,
       phrase VARCHAR(200) NOT NULL,
@@ -94,53 +97,74 @@ def create_tables_supabase():
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     );
 
-    -- Crear índices para mejor rendimiento
-    CREATE INDEX IF NOT EXISTS idx_phrases_user_id ON phrases(user_id);
-    CREATE INDEX IF NOT EXISTS idx_phrases_created_at ON phrases(created_at);
+    -- 2. Índices
+    CREATE INDEX IF NOT EXISTS idx_phrases_user_id ON public.phrases(user_id);
+    CREATE INDEX IF NOT EXISTS idx_phrases_created_at ON public.phrases(created_at);
+    CREATE INDEX IF NOT EXISTS idx_users_id ON public.users(id);
 
-    -- Habilitar RLS (Row Level Security)
-    ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-    ALTER TABLE phrases ENABLE ROW LEVEL SECURITY;
+    -- 3. Row Level Security (RLS)
+    ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE public.phrases ENABLE ROW LEVEL SECURITY;
 
-    -- Políticas para users
-    CREATE POLICY IF NOT EXISTS "Users can view own profile" ON users
-      FOR SELECT USING (auth.uid() = id);
+    -- Limpieza de políticas antiguas para evitar conflictos
+    DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+    DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+    DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
+    DROP POLICY IF EXISTS "admins_full_access" ON public.users;
+    
+    DROP POLICY IF EXISTS "Users can view own phrases" ON public.phrases;
+    DROP POLICY IF EXISTS "Users can insert own phrases" ON public.phrases;
+    DROP POLICY IF EXISTS "Users can update own phrases" ON public.phrases;
+    DROP POLICY IF EXISTS "Users can delete own phrases" ON public.phrases;
 
-    CREATE POLICY IF NOT EXISTS "Users can update own profile" ON users
-      FOR UPDATE USING (auth.uid() = id);
+    -- Políticas de Usuarios
+    CREATE POLICY "Users can view own profile" ON public.users
+      FOR SELECT TO authenticated USING (auth.uid() = id);
 
-    -- Políticas para phrases
-    CREATE POLICY IF NOT EXISTS "Users can view own phrases" ON phrases
-      FOR SELECT USING (auth.uid() = user_id);
+    CREATE POLICY "Users can update own profile" ON public.users
+      FOR UPDATE TO authenticated USING (auth.uid() = id);
 
-    CREATE POLICY IF NOT EXISTS "Users can insert own phrases" ON phrases
-      FOR INSERT WITH CHECK (auth.uid() = user_id);
+    -- Permitir insert si es el mismo usuario o service_role (backup)
+    CREATE POLICY "Users can insert own profile" ON public.users
+      FOR INSERT TO authenticated WITH CHECK (auth.uid() = id OR auth.role() = 'service_role');
+      
+    -- Políticas de Frases
+    CREATE POLICY "Users can view own phrases" ON public.phrases
+      FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
-    CREATE POLICY IF NOT EXISTS "Users can update own phrases" ON phrases
-      FOR UPDATE USING (auth.uid() = user_id);
+    CREATE POLICY "Users can insert own phrases" ON public.phrases
+      FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 
-    CREATE POLICY IF NOT EXISTS "Users can delete own phrases" ON phrases
-      FOR DELETE USING (auth.uid() = user_id);
+    CREATE POLICY "Users can update own phrases" ON public.phrases
+      FOR UPDATE TO authenticated USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
 
-    -- Función para crear usuario automáticamente
+    CREATE POLICY "Users can delete own phrases" ON public.phrases
+      FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+    -- 4. Trigger de Sincronización (Auth -> Public)
+    -- Importante: search_path = public para evitar problemas de seguridad
     CREATE OR REPLACE FUNCTION public.handle_new_user()
-    RETURNS TRIGGER AS $$
+    RETURNS TRIGGER
+    SECURITY DEFINER SET search_path = public
+    AS $$
     BEGIN
       INSERT INTO public.users (id, email, user_name)
-      VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'user_name');
+      VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'user_name', ''));
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql SECURITY DEFINER;
+    $$ LANGUAGE plpgsql;
 
-    -- Trigger para crear usuario automáticamente
     DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
     CREATE TRIGGER on_auth_user_created
       AFTER INSERT ON auth.users
       FOR EACH ROW
       EXECUTE FUNCTION public.handle_new_user();
 
-    -- Trigger para que cada usuario no duplique frases
-    CREATE UNIQUE INDEX IF NOT EXISTS uniq_phrase_per_user ON phrases(user_id, phrase);
+    -- 5. Restricción de Unicidad (Evitar duplicados)
+    DROP INDEX IF EXISTS uniq_phrase_per_user;
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_phrase_per_user 
+    ON public.phrases(user_id, phrase);
     """
     
     try:

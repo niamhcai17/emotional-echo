@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if show_favorites %}Favoritos
-    {% elif language_filter %}Frases en {{ language_name }}
-    {% else %}Mi Colección{% endif %} - Entrelíneas
+{% if show_favorites %}Favoritos
+{% elif language_filter %}Frases en {{ language_name }}
+{% else %}Mi Colección{% endif %} - Entrelíneas
 {% endblock %}
 
 {% block content %}
@@ -13,25 +13,29 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>
                     {% if show_favorites %}
-                        <i class="fas fa-heart text-danger me-2"></i>Mis Favoritos
+                    <i class="far fa-heart me-2"></i>Mis Favoritos
                     {% elif language_filter %}
-                        <i class="fas fa-flag me-2"></i>Frases en {{ language_name }}
+                    <i class="fas fa-flag me-2"></i>Frases en {{ language_name }}
                     {% else %}
-                        <i class="fas fa-book me-2"></i>Mi Colección
+                    <i class="fas fa-book-open me-2"></i>Mi Colección
                     {% endif %}
                 </h1>
                 <div class="btn-group" role="group">
-                    <a href="{{ url_for('collection') }}" class="btn btn-outline-primary {{ 'active' if not show_favorites and not language_filter else '' }}">
-                        <i class="fas fa-book me-1"></i>Todas
+                    <a href="{{ url_for('collection') }}"
+                        class="btn btn-outline-dark {{ 'active' if not show_favorites and not language_filter else '' }}">
+                        <i class="fas fa-book-open me-1"></i>Todas
                     </a>
-                    <a href="{{ url_for('favorites') }}" class="btn btn-outline-danger {{ 'active' if show_favorites else '' }}">
-                        <i class="fas fa-heart me-1"></i>Favoritos
+                    <a href="{{ url_for('favorites') }}"
+                        class="btn btn-outline-dark {{ 'active' if show_favorites else '' }}">
+                        <i class="far fa-heart me-1"></i>Favoritos
                     </a>
-                    <a href="{{ url_for('collection_by_language', language='es') }}" class="btn btn-outline-info {{ 'active' if language_filter == 'es' else '' }}">
-                        🇪🇸 Español
+                    <a href="{{ url_for('collection_by_language', language='es') }}"
+                        class="btn btn-outline-dark {{ 'active' if language_filter == 'es' else '' }}">
+                        Es
                     </a>
-                    <a href="{{ url_for('collection_by_language', language='en') }}" class="btn btn-outline-success {{ 'active' if language_filter == 'en' else '' }}">
-                        🇺🇸 English
+                    <a href="{{ url_for('collection_by_language', language='en') }}"
+                        class="btn btn-outline-dark {{ 'active' if language_filter == 'en' else '' }}">
+                        En
                     </a>
                 </div>
             </div>
@@ -47,13 +51,13 @@
                                     <p class="card-text">
                                         Mostrando <strong>{{ phrases|length }}</strong> frases
                                         {% if language_filter %}
-                                            en {{ language_name }}
+                                        en {{ language_name }}
                                         {% endif %}
                                     </p>
                                 </div>
                                 <div class="col-md-6 text-end">
                                     <a href="{{ url_for('stats') }}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-chart-bar me-1"></i>Ver Estadísticas
+                                        <i class="fas fa-chart-line me-1"></i>Ver Estadísticas
                                     </a>
                                 </div>
                             </div>
@@ -63,43 +67,43 @@
             </div>
 
             {% if phrases %}
-                <div class="row">
-                    {% for phrase in phrases %}
-                    <div class="col-lg-6 col-xl-4 mb-4">
-                        <div class="phrase-collection-card">
-                            <div class="phrase-content">
-                                <div class="phrase-text">
-                                    "{{ phrase.generated_phrase }}"
-                                </div>
-                                <div class="phrase-meta">
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        {% if phrase.created_at is string %}
-                                            {{ phrase.created_at[:10] }}
-                                        {% else %}
-                                            {{ phrase.created_at.strftime('%d/%m/%Y %H:%M') }}
-                                        {% endif %}
-                                    </small>
-                                    <span class="badge bg-secondary ms-2">
-                                        {% if phrase.style == 'poetica_minimalista' %}
-                                            <i class="fas fa-leaf me-1"></i>Minimalista
-                                        {% elif phrase.style == 'indirecta_redes' %}
-                                            <i class="fas fa-share-alt me-1"></i>Redes
-                                        {% elif phrase.style == 'diario_intimo' %}
-                                            <i class="fas fa-book-open me-1"></i>Íntimo
-                                        {% elif phrase.style == 'reflexiva' %}
-                                            <i class="fas fa-brain me-1"></i>Reflexiva
-                                        {% endif %}
-                                    </span>
-                                    <span class="badge bg-{{ 'success' if phrase.language == 'en' else 'info' }} ms-2">
-                                        {% if phrase.language == 'en' %}
-                                            🇺🇸 EN
-                                        {% else %}
-                                            🇪🇸 ES
-                                        {% endif %}
-                                    </span>
-                                </div>
+            <div class="row">
+                {% for phrase in phrases %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="phrase-collection-card">
+                        <div class="phrase-content">
+                            <div class="phrase-text">
+                                "{{ phrase.generated_phrase }}"
                             </div>
+<<<<<<< HEAD
+                            <div class="phrase-meta">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {% if phrase.created_at is string %}
+                                    {{ phrase.created_at[:10] }}
+                                    {% else %}
+                                    {{ phrase.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    {% endif %}
+                                </small>
+                                <span class="badge bg-light text-dark border ms-2">
+                                    {% if phrase.style == 'poetica_minimalista' %}
+                                    <i class="fas fa-leaf me-1"></i>Minimalista
+                                    {% elif phrase.style == 'indirecta_redes' %}
+                                    <i class="fas fa-share-alt me-1"></i>Redes
+                                    {% elif phrase.style == 'diario_intimo' %}
+                                    <i class="fas fa-book-open me-1"></i>Íntimo
+                                    {% elif phrase.style == 'reflexiva' %}
+                                    <i class="fas fa-brain me-1"></i>Reflexiva
+                                    {% endif %}
+                                </span>
+                                <span class="badge bg-light text-dark border ms-2">
+                                    {% if phrase.language == 'en' %}
+                                    EN
+                                    {% else %}
+                                    ES
+                                    {% endif %}
+                                </span>
+=======
                             <div class="phrase-actions">
                                 <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('{{ phrase.generated_phrase }}')">
                                     <i class="fas fa-copy"></i>
@@ -117,38 +121,57 @@
                                         id="deleteBtn{{ phrase.id }}">
                                     <i class="fas fa-trash"></i>
                                 </button>
+>>>>>>> 14efe72 (fix: phrase id in collection.html transformed to string and then sent to routes.py.)
                             </div>
                         </div>
+                        <div class="phrase-actions">
+                            <button class="btn btn-sm btn-outline-dark"
+                                onclick="copyToClipboard('{{ phrase.generated_phrase }}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-dark"
+                                onclick="sharePhrase('{{ phrase.generated_phrase }}')">
+                                <i class="fas fa-share"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-{{ 'dark' if phrase.is_favorite else 'secondary' }}"
+                                onclick="toggleFavorite({{ phrase.id }})" id="favoriteBtn{{ phrase.id }}">
+                                <i class="{{ 'fas' if phrase.is_favorite else 'far' }} fa-heart"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-dark" onclick="deletePhrase({{ phrase.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
+            </div>
             {% else %}
-                <div class="empty-state">
-                    <div class="text-center py-5">
-                        <i class="fas fa-{{ 'heart' if show_favorites else 'book' }} fa-3x text-muted mb-3"></i>
-                        <h3>
-                            {% if show_favorites %}
-                                No tienes frases favoritas aún
-                            {% elif language_filter %}
-                                No hay frases en {{ language_name }}
-                            {% else %}
-                                Tu colección está vacía
-                            {% endif %}
-                        </h3>
-                        <p class="text-muted">
-                            {% if show_favorites %}
-                                Marca tus frases favoritas para verlas aquí
-                            {% elif language_filter %}
-                                Crea frases en {{ language_name }} para verlas aquí
-                            {% else %}
-                                Crea tu primera frase poética para comenzar tu colección
-                            {% endif %}
-                        </p>
-                        <a href="{{ url_for('index') }}" class="btn btn-primary">
-                            <i class="fas fa-magic me-2"></i>Crear mi primera frase
-                        </a>
-                    </div>
+            <div class="empty-state">
+                <div class="text-center py-5">
+                    <i class="{{ 'far fa-heart' if show_favorites else 'fas fa-book-open' }} fa-3x text-muted mb-3"></i>
+                    <h3>
+                        {% if show_favorites %}
+                        No tienes frases favoritas aún
+                        {% elif language_filter %}
+                        No hay frases en {{ language_name }}
+                        {% else %}
+                        Tu colección está vacía
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted">
+                        {% if show_favorites %}
+                        Marca tus frases favoritas para verlas aquí
+                        {% elif language_filter %}
+                        Crea frases en {{ language_name }} para verlas aquí
+                        {% else %}
+                        Crea tu primera frase poética para comenzar tu colección
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-magic me-2"></i>Crear mi primera frase
+                    </a>
                 </div>
+            </div>
             {% endif %}
         </div>
     </div>
