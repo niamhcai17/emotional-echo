@@ -71,13 +71,9 @@
                         <button class="btn btn-outline-dark" onclick="sharePhrase('{{ generated_phrase }}')">
                             <i class="fas fa-share me-2"></i>Compartir
                         </button>
-<<<<<<< HEAD
-                        <button class="btn btn-outline-dark" onclick="toggleFavorite({{ phrase_id }})" id="favoriteBtn">
+                        <button class="btn btn-outline-dark" onclick="toggleFavorite('{{ phrase_id }}')"
+                            id="favoriteBtn">
                             <i class="far fa-heart me-2"></i>Guardar
-=======
-                        <button class="btn btn-outline-danger" onclick="toggleFavorite('{{ phrase_id }}')" id="favoriteBtn">
-                            <i class="fas fa-heart me-2"></i>Guardar
->>>>>>> 66e3b42 (fix: toggle favorite required to id to be string so user can mark as favorite inmediatly.)
                         </button>
                     </div>
                 </div>

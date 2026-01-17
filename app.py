@@ -9,7 +9,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 load_dotenv()
 
 # Configure logging for debugging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # Create the app
 app = Flask(__name__)
