@@ -384,6 +384,12 @@ def generate_phrase():
             
             if error:
                 print(f"❌ Error al guardar frase: {error}")
+                error_str = str(error).lower()
+                if "duplicate" in error_str or "unique constraint" in error_str:
+                    flash('¡Vaya! Esta frase ya la tienes guardada en tu colección.', 'warning')
+                    # Intentar buscar la frase existente para mostrarla si es posible, o simplemente redirigir
+                    return redirect(url_for('index'))
+                
                 phrase_id = None
                 flash(f'Error saving phrase: {error}', 'error')
                 return redirect(url_for('index'))
