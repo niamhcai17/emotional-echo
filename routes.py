@@ -374,13 +374,20 @@ def generate_phrase():
                                      original_emotion=emotion,
                                      style=style)
             
-            phrase = supabase_service.create_phrase(
+            phrase, error = supabase_service.create_phrase(
                 user_id=user_id,
                 original_emotion=emotion,
                 style=style,
                 phrase=generated_phrase,
                 language=language
             )
+            
+            if error:
+                print(f"❌ Error al guardar frase: {error}")
+                phrase_id = None
+                flash(f'Error saving phrase: {error}', 'error')
+                return redirect(url_for('index'))
+                
             phrase_id = phrase['id'] if phrase else None
         else:
             # Modo legacy

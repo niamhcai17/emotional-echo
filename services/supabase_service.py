@@ -99,12 +99,12 @@ class SupabaseService:
             response = self.supabase.table('phrases').insert(data).execute()
             
             if response.data:
-                return response.data[0]
-            return None
+                return response.data[0], None
+            return None, "No data returned from database"
             
         except Exception as e:
             print(f"Error creando frase: {e}")
-            return None
+            return None, str(e)
     
     def get_all_phrases(self, user_id=None):
         """Obtiene todas las frases ordenadas por fecha de creación"""
