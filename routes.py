@@ -88,7 +88,7 @@ def index():
             if user.user:
                 # Obtener información del usuario desde la tabla users
                 user_info = supabase_service.get_user_info(user.user.id)
-                user_name = user_info.get('full_name', 'Usuario') if user_info else 'Usuario'
+                user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
                 return render_template('index.html', user_name=user_name, user_id=user.user.id)
         except Exception as e:
             print(f"❌ Error en la función index: {e}")
@@ -366,8 +366,8 @@ def generate_phrase():
                 
                 # Obtener nombre de usuario para mostrar en el template
                 user_info = supabase_service.get_user_info(user_id)
-                user_name = user_info.get('full_name', 'Usuario') if user_info else 'Usuario'
-                
+                user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+
                 return render_template('index.html', 
                                      user_name=user_name,
                                      limit_reached=True,
@@ -411,8 +411,16 @@ def generate_phrase():
             phrase_id = phrase.id
         
         if phrase_id:
+            # Obtener nombre de usuario actualizado
+            user_name = 'Usuario'
+            if USE_SUPABASE:
+                user_info = supabase_service.get_user_info(user_id)
+                user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+            else:
+                user_name = request.cookies.get('user_name', 'Usuario')
+
             return render_template('index.html', 
-                                user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario',
+                                user_name=user_name,
                                 generated_phrase=generated_phrase,
                                 original_emotion=emotion,
                                 style=style,
@@ -480,7 +488,15 @@ def collection():
             else:
                 phrases = Phrase.query.order_by(Phrase.created_at.desc()).all()
         
-        return render_template('collection.html', phrases=phrases, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
+        # Obtener nombre de usuario
+        user_name = 'Usuario'
+        if USE_SUPABASE:
+            user_info = supabase_service.get_user_info(user_id)
+            user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+        else:
+            user_name = request.cookies.get('user_name', 'Usuario')
+            
+        return render_template('collection.html', phrases=phrases, user_name=user_name)
     except Exception as e:
         flash('Error al cargar la colección.', 'error')
         return redirect(url_for('index'))
@@ -506,7 +522,15 @@ def favorites():
             else:
                 phrases = Phrase.query.filter_by(is_favorite=True).order_by(Phrase.created_at.desc()).all()
         
-        return render_template('collection.html', phrases=phrases, show_favorites=True, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
+        # Obtener nombre de usuario
+        user_name = 'Usuario'
+        if USE_SUPABASE:
+            user_info = supabase_service.get_user_info(user_id)
+            user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+        else:
+            user_name = request.cookies.get('user_name', 'Usuario')
+
+        return render_template('collection.html', phrases=phrases, show_favorites=True, user_name=user_name)
     except Exception as e:
         flash('Error al cargar los favoritos.', 'error')
         return redirect(url_for('index'))
@@ -536,8 +560,16 @@ def collection_by_language(language):
             else:
                 phrases = Phrase.query.filter_by(language=language).order_by(Phrase.created_at.desc()).all()
         
+        # Obtener nombre de usuario
+        user_name = 'Usuario'
+        if USE_SUPABASE:
+            user_info = supabase_service.get_user_info(user_id)
+            user_name = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+        else:
+            user_name = request.cookies.get('user_name', 'Usuario')
+
         language_name = 'Español' if language == 'es' else 'English'
-        return render_template('collection.html', phrases=phrases, language_filter=language, language_name=language_name, user_name=request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario')
+        return render_template('collection.html', phrases=phrases, language_filter=language, language_name=language_name, user_name=user_name)
     except Exception as e:
         flash('Error al cargar las frases por idioma.', 'error')
         return redirect(url_for('collection'))
@@ -578,10 +610,15 @@ def stats():
                 'total_phrases': total_phrases,
                 'favorite_phrases': favorite_phrases,
                 'language_stats': language_stats,
-                'user_name': request.cookies.get('user_name', 'Usuario') if not USE_SUPABASE else 'Usuario' # Assuming user_name is the key for legacy
+                'user_name': request.cookies.get('user_name', 'Usuario')
             }
         
-        return render_template('stats.html', stats=stats_data)
+        # Añadir user_name a stats_data para Supabase también si no está
+        if USE_SUPABASE and 'user_name' not in stats_data:
+            user_info = supabase_service.get_user_info(user_id)
+            stats_data['user_name'] = user_info.get('user_name', 'Usuario') if user_info else 'Usuario'
+        
+        return render_template('stats.html', stats=stats_data, user_name=stats_data.get('user_name'))
     except Exception as e:
         flash('Error al cargar las estadísticas.', 'error')
         return redirect(url_for('index'))
