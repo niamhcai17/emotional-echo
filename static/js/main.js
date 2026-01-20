@@ -12,11 +12,11 @@ class AuthManager {
         if (this.isCheckingAuth && this.authCheckPromise) {
             return this.authCheckPromise; // Return existing promise if check is in progress
         }
-        
+
         this.isCheckingAuth = true;
-        
+
         this.authCheckPromise = this._performSessionCheck();
-        
+
         try {
             const result = await this.authCheckPromise;
             this.retryCount = 0; // Reset retry count on success
@@ -30,10 +30,10 @@ class AuthManager {
     async _performSessionCheck() {
         try {
             const { data: { session }, error } = await this.supabase.auth.getSession();
-            
+
             if (error) {
                 console.error('Error obteniendo sesión:', error);
-                
+
                 // Retry logic for network errors
                 if (this.retryCount < this.maxRetries && this._isRetryableError(error)) {
                     this.retryCount++;
@@ -41,14 +41,14 @@ class AuthManager {
                     await this._delay(1000 * this.retryCount); // Exponential backoff
                     return this._performSessionCheck();
                 }
-                
+
                 return { session: null, error };
             }
-            
+
             return { session, error: null };
         } catch (error) {
             console.error('Error verificando autenticación:', error);
-            
+
             // Retry logic for network errors
             if (this.retryCount < this.maxRetries && this._isRetryableError(error)) {
                 this.retryCount++;
@@ -56,7 +56,7 @@ class AuthManager {
                 await this._delay(1000 * this.retryCount); // Exponential backoff
                 return this._performSessionCheck();
             }
-            
+
             return { session: null, error };
         }
     }
@@ -85,12 +85,12 @@ class AuthManager {
     async redirectIfNotAuthenticated(redirectTo = '/landing') {
         try {
             const { session, error } = await this.checkSession();
-            
+
             if (error) {
                 console.warn('Error verificando autenticación, permitiendo acceso:', error);
                 return false; // Don't redirect on error, allow user to see the page
             }
-            
+
             if (!session && window.location.pathname !== redirectTo) {
                 console.log('Usuario no autenticado, redirigiendo a:', redirectTo);
                 this._showLoadingState('Verificando autenticación...');
@@ -107,12 +107,12 @@ class AuthManager {
     async redirectIfAuthenticated(redirectTo = '/') {
         try {
             const { session, error } = await this.checkSession();
-            
+
             if (error) {
                 console.warn('Error verificando autenticación, permitiendo acceso:', error);
                 return false; // Don't redirect on error, allow user to see the page
             }
-            
+
             if (session && window.location.pathname !== redirectTo) {
                 console.log('Usuario ya autenticado, redirigiendo a:', redirectTo);
                 this._showLoadingState('Redirigiendo...');
@@ -167,10 +167,10 @@ class AuthManager {
     setupAuthStateListener() {
         this.supabase.auth.onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
-            
+
             // Hide loading state when auth state changes
             this._hideLoadingState();
-            
+
             if (event === 'SIGNED_OUT' || !session) {
                 this.updateUserInterface(null);
                 if (window.location.pathname !== '/landing') {
@@ -196,10 +196,10 @@ function initializeAuthManager(supabaseClient) {
     if (!authManager && supabaseClient) {
         authManager = new AuthManager(supabaseClient);
         authManager.setupAuthStateListener();
-        
+
         // Add global error handler for auth errors
         window.addEventListener('unhandledrejection', (event) => {
-            if (event.reason && event.reason.message && 
+            if (event.reason && event.reason.message &&
                 event.reason.message.includes('auth')) {
                 console.error('Unhandled auth error:', event.reason);
                 authManager._hideLoadingState();
@@ -255,7 +255,7 @@ async function getCurrentUser() {
  */
 
 // Character counter for emotion input
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const emotionInput = document.getElementById('emotion');
     const charCount = document.getElementById('charCount');
     const generateBtn = document.getElementById('generateBtn');
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function updateCharCount() {
             const count = emotionInput.value.length;
             charCount.textContent = count;
-            
+
             if (count > 450) {
                 charCount.style.color = '#dc3545';
             } else if (count > 350) {
@@ -278,28 +278,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 charCount.style.color = '#6c757d';
             }
         }
-        
+
         emotionInput.addEventListener('input', updateCharCount);
         updateCharCount(); // Initial count
     }
 
     // Form submission with loading state
     if (emotionForm && generateBtn) {
-        emotionForm.addEventListener('submit', function(e) {
+        emotionForm.addEventListener('submit', function (e) {
             if (emotionInput.value.trim() === '') {
                 e.preventDefault();
                 alert('Por favor, describe cómo te sientes.');
                 return;
             }
-            
+
             // Show loading state
             generateBtn.disabled = true;
             generateBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Creando...';
             generateBtn.classList.add('loading');
-            
+
             // Show loading modal
             loadingModal.show();
-            
+
             // Add a small delay to ensure the modal shows before form submission
             setTimeout(() => {
                 // The form will submit normally
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadingModal) {
             loadingModal.hide();
         }
-        
+
         // Reset button state
         if (generateBtn) {
             generateBtn.disabled = false;
@@ -335,13 +335,48 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Copy to clipboard functionality
+// Copy to clipboard functionality
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
+    if (!navigator.clipboard) {
+        fallbackCopyTextToClipboard(text);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(function () {
         showToast('Frase copiada al portapapeles', 'success');
-    }, function(err) {
-        console.error('Error al copiar: ', err);
-        showToast('Error al copiar la frase', 'error');
+    }, function (err) {
+        console.error('Async: Could not copy text: ', err);
+        fallbackCopyTextToClipboard(text);
     });
+}
+
+function fallbackCopyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        if (successful) {
+            showToast('Frase copiada al portapapeles', 'success');
+        } else {
+            showToast('No se pudo copiar la frase automÃ¡ticamente', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        showToast('Error al copiar. Intenta manualmente.', 'error');
+    }
+
+    document.body.removeChild(textArea);
 }
 
 // Share functionality
@@ -365,55 +400,55 @@ function sharePhrase(text) {
 // Toggle favorite status
 function toggleFavorite(phraseId) {
     const favoriteBtn = document.getElementById(`favoriteBtn${phraseId}`) || document.getElementById('favoriteBtn');
-    
+
     fetch(`/favorite/${phraseId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            if (favoriteBtn) {
-                if (data.is_favorite) {
-                    favoriteBtn.classList.remove('btn-outline-secondary');
-                    favoriteBtn.classList.add('btn-outline-danger');
-                    favoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
-                } else {
-                    favoriteBtn.classList.remove('btn-outline-danger');
-                    favoriteBtn.classList.add('btn-outline-secondary');
-                    favoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (favoriteBtn) {
+                    if (data.is_favorite) {
+                        favoriteBtn.classList.remove('btn-outline-secondary');
+                        favoriteBtn.classList.add('btn-outline-danger');
+                        favoriteBtn.innerHTML = '<i class="fas fa-heart"></i>';
+                    } else {
+                        favoriteBtn.classList.remove('btn-outline-danger');
+                        favoriteBtn.classList.add('btn-outline-secondary');
+                        favoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
+                    }
                 }
+                showToast(data.is_favorite ? 'Frase añadida a favoritos' : 'Frase removida de favoritos', 'success');
             }
-            showToast(data.is_favorite ? 'Frase añadida a favoritos' : 'Frase removida de favoritos', 'success');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('Error al actualizar favoritos', 'error');
-    });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error al actualizar favoritos', 'error');
+        });
 }
 
 // Delete phrase with confirmation modal
 function deletePhrase(phraseId) {
     const deleteFormElement = document.getElementById('deleteForm');
     const deleteModal = document.getElementById('deleteModal');
-    
+
     if (deleteFormElement && deleteModal) {
         // Set the form action to the correct delete URL
         deleteFormElement.action = `/delete/${phraseId}`;
         // Show the confirmation modal
         const modal = new bootstrap.Modal(deleteModal);
         modal.show();
-        
+
         // Add animation to the phrase card for visual feedback
         const phraseCard = document.querySelector(`[data-phrase-id="${phraseId}"]`);
         if (phraseCard) {
             phraseCard.style.transition = 'all 0.3s ease';
             phraseCard.style.transform = 'scale(0.98)';
             phraseCard.style.opacity = '0.7';
-            
+
             // Reset animation when modal is hidden without deleting
             deleteModal.addEventListener('hidden.bs.modal', function resetAnimation() {
                 if (phraseCard) {
@@ -439,9 +474,9 @@ function showToast(message, type = 'info') {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 150);

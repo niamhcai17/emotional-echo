@@ -40,31 +40,7 @@
                 </div>
             </div>
 
-            <!-- Filtros adicionales -->
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="card-title">📊 Estadísticas</h6>
-                                    <p class="card-text">
-                                        Mostrando <strong>{{ phrases|length }}</strong> frases
-                                        {% if language_filter %}
-                                        en {{ language_name }}
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="col-md-6 text-end">
-                                    <a href="{{ url_for('stats') }}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-chart-line me-1"></i>Ver Estadísticas
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             {% if phrases %}
             <div class="row">
