@@ -83,6 +83,19 @@ class SupabaseService:
             print(f"Error actualizando usuario: {e}")
             return None
     
+    def _map_phrase_data(self, data):
+        """Mapea los datos de la DB a lo que espera la app (phrase -> generated_phrase)"""
+        if isinstance(data, list):
+            for item in data:
+                if 'phrase' in item:
+                    item['generated_phrase'] = item['phrase']
+            return data
+        elif isinstance(data, dict):
+            if 'phrase' in data:
+                data['generated_phrase'] = data['phrase']
+            return data
+        return data
+
     def create_phrase(self, user_id, original_emotion, style, phrase, language='es'):
         """Crea una nueva frase en Supabase"""
         try:
@@ -90,7 +103,7 @@ class SupabaseService:
                 'user_id': user_id,
                 'original_emotion': original_emotion,
                 'style': style,
-                'generated_phrase': phrase,
+                'phrase': phrase, # Corregido: nombre de columna en DB es 'phrase'
                 'language': language,
                 'created_at': datetime.utcnow().isoformat(),
                 'is_favorite': False
@@ -99,7 +112,7 @@ class SupabaseService:
             response = self.supabase.table('phrases').insert(data).execute()
             
             if response.data:
-                return response.data[0], None
+                return self._map_phrase_data(response.data[0]), None
             return None, "No data returned from database"
             
         except Exception as e:
@@ -115,7 +128,7 @@ class SupabaseService:
                 query = query.eq('user_id', user_id)
             
             response = query.execute()
-            return response.data
+            return self._map_phrase_data(response.data)
         except Exception as e:
             print(f"Error obteniendo frases: {e}")
             return []
@@ -129,7 +142,7 @@ class SupabaseService:
                 query = query.eq('user_id', user_id)
             
             response = query.execute()
-            return response.data
+            return self._map_phrase_data(response.data)
         except Exception as e:
             print(f"Error obteniendo frases favoritas: {e}")
             return []
@@ -143,7 +156,7 @@ class SupabaseService:
                 query = query.eq('user_id', user_id)
             
             response = query.execute()
-            return response.data
+            return self._map_phrase_data(response.data)
         except Exception as e:
             print(f"Error obteniendo frases por idioma: {e}")
             return []
@@ -153,7 +166,7 @@ class SupabaseService:
         try:
             response = self.supabase.table('phrases').select('*').eq('id', phrase_id).execute()
             if response.data:
-                return response.data[0]
+                return self._map_phrase_data(response.data[0])
             return None
         except Exception as e:
             print(f"Error obteniendo frase por ID: {e}")
